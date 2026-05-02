@@ -1,0 +1,1044 @@
+extends Control
+## Minimal test combat scene. Builds UI programmatically, wires into the
+## Events bus, creates sample cards/enemies, and runs a full combat loop.
+
+# -- UI references (built in _build_ui) --
+var combat_engine: CombatEngine
+var hand_container: HBoxContainer
+var enemy_container: HBoxContainer
+var hp_label: Label
+var energy_label: Label
+var block_label: Label
+var passion_label: Label
+var player_status_label: Label
+var draw_label: Button
+var discard_label: Button
+var exhaust_label: Button
+var end_turn_btn: Button
+var log_text: RichTextLabel
+var pile_popup: PanelContainer
+
+# -- Interaction state --
+var selected_card: CardData = null
+var card_nodes: Dictionary = {} # CardData -> PanelContainer
+var enemy_nodes: Dictionary = {} # EnemyCombatState -> PanelContainer
+
+
+var continue_btn: Button
+
+
+func _ready() -> void:
+	_build_ui()
+	_connect_events()
+	_start_combat()
+
+
+# ============================================================
+# UI CONSTRUCTION
+# ============================================================
+
+func _build_ui() -> void:
+	# Background
+	var bg = ColorRect.new()
+	bg.color = Color(0.12, 0.1, 0.14)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(bg)
+
+	# Main layout with margins
+	var margin = MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.add_theme_constant_override("margin_left", 30)
+	margin.add_theme_constant_override("margin_right", 30)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	add_child(margin)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
+
+	# Top bar: pile counts
+	vbox.add_child(_build_top_bar())
+
+	# Enemy area
+	enemy_container = HBoxContainer.new()
+	enemy_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	enemy_container.add_theme_constant_override("separation", 40)
+	enemy_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(enemy_container)
+
+	# Player info bar
+	vbox.add_child(_build_player_bar())
+
+	# Hand + End Turn
+	vbox.add_child(_build_bottom_area())
+
+	# Combat log
+	log_text = RichTextLabel.new()
+	log_text.bbcode_enabled = true
+	log_text.custom_minimum_size.y = 160
+	log_text.scroll_following = true
+	var log_style = StyleBoxFlat.new()
+	log_style.bg_color = Color(0.06, 0.06, 0.08, 0.95)
+	log_style.set_corner_radius_all(6)
+	log_style.content_margin_left = 12
+	log_style.content_margin_right = 12
+	log_style.content_margin_top = 8
+	log_style.content_margin_bottom = 8
+	log_text.add_theme_stylebox_override("normal", log_style)
+	vbox.add_child(log_text)
+
+
+func _build_top_bar() -> HBoxContainer:
+	var bar = HBoxContainer.new()
+
+	draw_label = _make_pile_button(Color(0.5, 0.7, 0.9))
+	draw_label.pressed.connect(_on_pile_clicked.bind("draw"))
+	bar.add_child(draw_label)
+
+	var spacer = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bar.add_child(spacer)
+
+	exhaust_label = _make_pile_button(Color(0.6, 0.5, 0.6))
+	exhaust_label.pressed.connect(_on_pile_clicked.bind("exhaust"))
+	bar.add_child(exhaust_label)
+
+	var spacer2 = Control.new()
+	spacer2.custom_minimum_size.x = 30
+	bar.add_child(spacer2)
+
+	discard_label = _make_pile_button(Color(0.7, 0.5, 0.5))
+	discard_label.pressed.connect(_on_pile_clicked.bind("discard"))
+	bar.add_child(discard_label)
+
+	return bar
+
+
+func _make_pile_button(color: Color) -> Button:
+	var btn = Button.new()
+	btn.flat = true
+	btn.add_theme_font_size_override("font_size", 20)
+	btn.add_theme_color_override("font_color", color)
+	btn.add_theme_color_override("font_hover_color", color.lightened(0.3))
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	return btn
+
+
+func _build_player_bar() -> PanelContainer:
+	var panel = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.1, 0.1, 0.12, 0.8)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 20
+	style.content_margin_right = 20
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	panel.add_theme_stylebox_override("panel", style)
+
+	var bar = HBoxContainer.new()
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.add_theme_constant_override("separation", 40)
+	panel.add_child(bar)
+
+	hp_label = _make_stat_label(Color(0.9, 0.3, 0.3))
+	bar.add_child(hp_label)
+
+	block_label = _make_stat_label(Color(0.3, 0.6, 0.9))
+	bar.add_child(block_label)
+
+	energy_label = _make_stat_label(Color(0.9, 0.9, 0.3))
+	bar.add_child(energy_label)
+
+	passion_label = _make_stat_label(Color(0.9, 0.5, 0.2))
+	bar.add_child(passion_label)
+
+	player_status_label = _make_stat_label(Color(0.8, 0.8, 0.6))
+	player_status_label.add_theme_font_size_override("font_size", 18)
+	bar.add_child(player_status_label)
+
+	return panel
+
+
+func _build_bottom_area() -> HBoxContainer:
+	var bottom = HBoxContainer.new()
+	bottom.add_theme_constant_override("separation", 20)
+
+	hand_container = HBoxContainer.new()
+	hand_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	hand_container.add_theme_constant_override("separation", 10)
+	hand_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom.add_child(hand_container)
+
+	end_turn_btn = Button.new()
+	end_turn_btn.text = "End Turn"
+	end_turn_btn.custom_minimum_size = Vector2(130, 55)
+	end_turn_btn.add_theme_font_size_override("font_size", 18)
+	end_turn_btn.pressed.connect(_on_end_turn_pressed)
+	bottom.add_child(end_turn_btn)
+
+	return bottom
+
+
+func _make_stat_label(color: Color) -> Label:
+	var lbl = Label.new()
+	lbl.add_theme_font_size_override("font_size", 24)
+	lbl.add_theme_color_override("font_color", color)
+	return lbl
+
+
+func _on_pile_clicked(pile_name: String) -> void:
+	# Toggle off if already showing
+	if pile_popup:
+		pile_popup.queue_free()
+		pile_popup = null
+		return
+
+	var cards: Array = []
+	var title: String
+	match pile_name:
+		"draw":
+			cards = combat_engine.piles.draw_pile.duplicate()
+			title = "Draw Pile"
+		"discard":
+			cards = combat_engine.piles.discard_pile.duplicate()
+			title = "Discard Pile"
+		"exhaust":
+			cards = combat_engine.piles.exhaust_pile.duplicate()
+			title = "Exhaust Pile"
+
+	_show_pile_popup(title, cards)
+
+
+func _show_pile_popup(title: String, cards: Array) -> void:
+	pile_popup = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.08, 0.1, 0.95)
+	style.set_corner_radius_all(10)
+	style.set_border_width_all(2)
+	style.border_color = Color(0.4, 0.4, 0.5)
+	style.content_margin_left = 20
+	style.content_margin_right = 20
+	style.content_margin_top = 16
+	style.content_margin_bottom = 16
+	pile_popup.add_theme_stylebox_override("panel", style)
+	pile_popup.set_anchors_preset(Control.PRESET_CENTER)
+	pile_popup.custom_minimum_size = Vector2(500, 300)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	pile_popup.add_child(vbox)
+
+	# Title row
+	var header = HBoxContainer.new()
+	vbox.add_child(header)
+
+	var title_lbl = Label.new()
+	title_lbl.text = "%s (%d)" % [title, cards.size()]
+	title_lbl.add_theme_font_size_override("font_size", 22)
+	title_lbl.add_theme_color_override("font_color", Color(0.9, 0.85, 0.6))
+	title_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title_lbl)
+
+	var close_btn = Button.new()
+	close_btn.text = "X"
+	close_btn.custom_minimum_size = Vector2(40, 40)
+	close_btn.add_theme_font_size_override("font_size", 18)
+	close_btn.pressed.connect(_close_pile_popup)
+	header.add_child(close_btn)
+
+	# Card list
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(scroll)
+
+	var list = VBoxContainer.new()
+	list.add_theme_constant_override("separation", 4)
+	scroll.add_child(list)
+
+	if cards.size() == 0:
+		var empty = Label.new()
+		empty.text = "(empty)"
+		empty.add_theme_font_size_override("font_size", 16)
+		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		list.add_child(empty)
+	else:
+		for card in cards:
+			var row = HBoxContainer.new()
+			row.add_theme_constant_override("separation", 12)
+			list.add_child(row)
+
+			var cost_lbl = Label.new()
+			cost_lbl.text = "[%d]" % card.energy_cost
+			cost_lbl.add_theme_font_size_override("font_size", 16)
+			cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
+			cost_lbl.custom_minimum_size.x = 30
+			row.add_child(cost_lbl)
+
+			var name_lbl = Label.new()
+			name_lbl.text = card.card_name
+			name_lbl.add_theme_font_size_override("font_size", 16)
+			var type_colors = [Color(0.9, 0.5, 0.5), Color(0.5, 0.7, 0.9), Color(0.9, 0.8, 0.3)]
+			name_lbl.add_theme_color_override("font_color", type_colors[card.card_type])
+			name_lbl.custom_minimum_size.x = 140
+			row.add_child(name_lbl)
+
+			var desc_lbl = Label.new()
+			desc_lbl.text = card.get_generated_description()
+			desc_lbl.add_theme_font_size_override("font_size", 14)
+			desc_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+			row.add_child(desc_lbl)
+
+	add_child(pile_popup)
+
+
+func _close_pile_popup() -> void:
+	if pile_popup:
+		pile_popup.queue_free()
+		pile_popup = null
+
+
+# ============================================================
+# EVENT CONNECTIONS
+# ============================================================
+
+func _connect_events() -> void:
+	Events.combat_started.connect(_on_combat_started)
+	Events.combat_won.connect(_on_combat_won)
+	Events.combat_lost.connect(_on_combat_lost)
+	Events.card_played.connect(_on_card_played)
+	Events.card_exhausted.connect(_on_card_exhausted)
+	Events.player_turn_started.connect(_on_player_turn_started)
+	Events.enemy_turn_started.connect(_on_enemy_turn_started)
+	Events.player_damaged.connect(_on_player_damaged)
+	Events.enemy_damaged.connect(_on_enemy_damaged)
+	Events.enemy_died.connect(_on_enemy_died)
+	Events.block_gained.connect(_on_block_gained)
+	Events.passion_changed.connect(_on_passion_changed)
+	Events.status_applied.connect(_on_status_applied)
+	Events.status_removed.connect(_on_status_removed)
+
+
+# ============================================================
+# COMBAT SETUP
+# ============================================================
+
+func _start_combat() -> void:
+	# If no run is active, start a test run (direct scene launch for debugging)
+	if not RunManager.run_active:
+		var character = _create_test_character()
+		RunManager.start_run(character)
+
+	combat_engine = CombatEngine.new()
+	combat_engine.name = "CombatEngine"
+	add_child(combat_engine)
+
+	# Use pending enemies from map, or fall back to test enemies
+	var enemy_datas: Array[EnemyData] = []
+	if RunManager.pending_enemies.size() > 0:
+		enemy_datas = RunManager.pending_enemies.duplicate()
+		RunManager.pending_enemies.clear()
+	else:
+		enemy_datas = [_create_slime(), _create_goblin()]
+
+	combat_engine.start_combat(
+		RunManager.current_deck,
+		RunManager.current_hp,
+		RunManager.max_hp,
+		enemy_datas
+	)
+	_log("[color=gold]Combat begins![/color]")
+
+
+func _create_test_character() -> CharacterData:
+	var c = CharacterData.new()
+	c.character_name = "Emo Hybrid Caster"
+	c.max_health = 80
+	c.passion_volatility = 1.0
+	c.passion_thresholds.assign([80, 60, 40, 20])
+	c.primary_personality = "Magic"
+	c.secondary_personality = "Physical"
+
+	var strike = _make_card("Strike", 1, CardData.CardType.ATTACK,
+		CardData.TargetType.SINGLE_ENEMY, [_make_damage(6)])
+	var defend = _make_card("Defend", 1, CardData.CardType.SKILL,
+		CardData.TargetType.SELF, [_make_block(5)])
+	var bash = _make_card("Bash", 2, CardData.CardType.ATTACK,
+		CardData.TargetType.SINGLE_ENEMY, [_make_damage(8), _make_status(StatusEffects.VULNERABLE, 2)])
+	var noxious = _make_card("Noxious Strike", 1, CardData.CardType.ATTACK,
+		CardData.TargetType.SINGLE_ENEMY, [_make_damage(4), _make_status(StatusEffects.POISON, 3)])
+	var flame_strike = _make_card("Flame Strike", 1, CardData.CardType.ATTACK,
+		CardData.TargetType.SINGLE_ENEMY, [_make_damage(10), _make_passion(-3)])
+	flame_strike.personality = CardData.PersonalityType.PRIMARY
+	var meditate = _make_card("Meditate", 1, CardData.CardType.SKILL,
+		CardData.TargetType.SELF, [_make_block(4), _make_passion(3)])
+
+	for i in 2:
+		c.starting_deck.append(strike)
+	for i in 2:
+		c.starting_deck.append(defend)
+	var cleave = _make_card("Cleave", 1, CardData.CardType.ATTACK,
+		CardData.TargetType.ALL_ENEMIES, [_make_damage(4)])
+	c.starting_deck.append(bash)
+	c.starting_deck.append(noxious)
+	c.starting_deck.append(cleave)
+	c.starting_deck.append(flame_strike)
+	c.starting_deck.append(meditate)
+
+	# Personality card pools for tier-based rewards
+	c.primary_cards = CardPool.build_emo_primary_pool()
+	c.secondary_cards = CardPool.build_emo_secondary_pool()
+
+	return c
+
+
+func _create_slime() -> EnemyData:
+	var e = EnemyData.new()
+	e.enemy_name = "Slime"
+	e.max_health = 42
+
+	var tackle = EnemyMove.new()
+	tackle.move_name = "Tackle"
+	tackle.intent_type = EnemyMove.IntentType.ATTACK
+	tackle.effects.assign([_make_damage(6)])
+	tackle.weight = 2.0
+
+	var harden = EnemyMove.new()
+	harden.move_name = "Harden"
+	harden.intent_type = EnemyMove.IntentType.DEFEND
+	harden.effects.assign([_make_block(5)])
+	harden.weight = 1.0
+
+	var slam = EnemyMove.new()
+	slam.move_name = "Slam"
+	slam.intent_type = EnemyMove.IntentType.ATTACK
+	slam.effects.assign([_make_damage(12)])
+	slam.weight = 0.5
+
+	var spit = EnemyMove.new()
+	spit.move_name = "Spit"
+	spit.intent_type = EnemyMove.IntentType.DEBUFF
+	spit.effects.assign([_make_status(StatusEffects.WEAK, 1)])
+	spit.weight = 1.0
+
+	e.moves.assign([tackle, harden, slam, spit])
+	return e
+
+
+func _create_goblin() -> EnemyData:
+	var e = EnemyData.new()
+	e.enemy_name = "Goblin"
+	e.max_health = 26
+
+	var stab = EnemyMove.new()
+	stab.move_name = "Stab"
+	stab.intent_type = EnemyMove.IntentType.ATTACK
+	stab.effects.assign([_make_damage(4)])
+	stab.weight = 2.0
+
+	var slash = EnemyMove.new()
+	slash.move_name = "Slash"
+	slash.intent_type = EnemyMove.IntentType.ATTACK
+	slash.effects.assign([_make_damage(8)])
+	slash.weight = 1.0
+
+	var poison_dart = EnemyMove.new()
+	poison_dart.move_name = "Poison Dart"
+	poison_dart.intent_type = EnemyMove.IntentType.ATTACK
+	poison_dart.effects.assign([_make_damage(2), _make_status(StatusEffects.POISON, 2)])
+	poison_dart.weight = 0.7
+
+	e.moves.assign([stab, slash, poison_dart])
+	return e
+
+
+# -- Factory helpers --
+
+func _make_card(card_name: String, cost: int, type: CardData.CardType,
+		target: CardData.TargetType, card_effects: Array) -> CardData:
+	var c = CardData.new()
+	c.card_name = card_name
+	c.energy_cost = cost
+	c.card_type = type
+	c.target_type = target
+	for e in card_effects:
+		c.effects.append(e)
+	return c
+
+
+func _make_damage(amount: int) -> DamageEffect:
+	var e = DamageEffect.new()
+	e.value = amount
+	return e
+
+
+func _make_block(amount: int) -> BlockEffect:
+	var e = BlockEffect.new()
+	e.value = amount
+	return e
+
+
+func _make_status(effect: StatusEffectData, stacks: int) -> StatusApplyEffect:
+	var e = StatusApplyEffect.new()
+	e.status_effect = effect
+	e.value = stacks
+	return e
+
+
+func _make_passion(amount: int) -> PassionEffect:
+	var e = PassionEffect.new()
+	e.value = amount
+	return e
+
+
+func _get_personality_label(pers: CardData.PersonalityType) -> String:
+	if RunManager.current_character:
+		if pers == CardData.PersonalityType.PRIMARY:
+			return RunManager.current_character.primary_personality
+		if pers == CardData.PersonalityType.SECONDARY:
+			return RunManager.current_character.secondary_personality
+	var names = {
+		CardData.PersonalityType.PRIMARY: "Primary",
+		CardData.PersonalityType.SECONDARY: "Secondary",
+	}
+	return names.get(pers, "")
+
+
+func _get_personality_color(pers: CardData.PersonalityType) -> Color:
+	if pers == CardData.PersonalityType.PRIMARY:
+		return Color(0.9, 0.5, 0.2) # Warm orange for magic
+	if pers == CardData.PersonalityType.SECONDARY:
+		return Color(0.4, 0.6, 0.9) # Cool blue for physical
+	return Color(0.6, 0.6, 0.6)
+
+
+# ============================================================
+# CARD UI
+# ============================================================
+
+func _create_card_panel(card: CardData) -> PanelContainer:
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(160, 220)
+
+	var style = StyleBoxFlat.new()
+	style.set_corner_radius_all(8)
+	style.set_border_width_all(3)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+
+	match card.card_type:
+		CardData.CardType.ATTACK:
+			style.bg_color = Color(0.25, 0.12, 0.12)
+			style.border_color = Color(0.8, 0.3, 0.3)
+		CardData.CardType.SKILL:
+			style.bg_color = Color(0.12, 0.15, 0.25)
+			style.border_color = Color(0.3, 0.5, 0.8)
+		CardData.CardType.POWER:
+			style.bg_color = Color(0.25, 0.22, 0.1)
+			style.border_color = Color(0.8, 0.7, 0.2)
+
+	panel.add_theme_stylebox_override("panel", style)
+
+	var vbox = VBoxContainer.new()
+	panel.add_child(vbox)
+
+	# Energy cost
+	var cost_lbl = Label.new()
+	cost_lbl.text = str(card.energy_cost)
+	cost_lbl.add_theme_font_size_override("font_size", 24)
+	cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
+	vbox.add_child(cost_lbl)
+
+	# Card name
+	var name_lbl = Label.new()
+	name_lbl.text = card.card_name
+	name_lbl.add_theme_font_size_override("font_size", 17)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(name_lbl)
+
+	# Type + Rarity
+	var type_names = ["Attack", "Skill", "Power"]
+	var rarity_names = ["Starter", "Common", "Uncommon", "Rare"]
+	var rarity_colors = [
+		Color(0.5, 0.5, 0.5), Color(0.55, 0.55, 0.55),
+		Color(0.3, 0.7, 0.9), Color(0.95, 0.8, 0.2),
+	]
+	var type_lbl = Label.new()
+	type_lbl.text = "%s - %s" % [type_names[card.card_type], rarity_names[card.rarity]]
+	type_lbl.add_theme_font_size_override("font_size", 12)
+	type_lbl.add_theme_color_override("font_color", rarity_colors[card.rarity])
+	type_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(type_lbl)
+
+	# Personality tag (Magic / Physical)
+	if card.personality != CardData.PersonalityType.NEUTRAL:
+		var pers_lbl = Label.new()
+		pers_lbl.text = _get_personality_label(card.personality)
+		pers_lbl.add_theme_font_size_override("font_size", 11)
+		pers_lbl.add_theme_color_override("font_color", _get_personality_color(card.personality))
+		pers_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(pers_lbl)
+
+	# Spacer
+	var spacer = Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(spacer)
+
+	# Description (show modified values if in combat)
+	var desc_lbl = Label.new()
+	if combat_engine and combat_engine.player_stats:
+		desc_lbl.text = card.get_modified_description(combat_engine.player_stats)
+	else:
+		desc_lbl.text = card.get_generated_description()
+	desc_lbl.add_theme_font_size_override("font_size", 14)
+	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(desc_lbl)
+
+	# Make all children pass clicks through to the panel
+	_ignore_mouse_recursive(vbox)
+
+	# Click handler
+	panel.gui_input.connect(_on_card_input.bind(card))
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	return panel
+
+
+func _ignore_mouse_recursive(control: Control) -> void:
+	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in control.get_children():
+		if child is Control:
+			_ignore_mouse_recursive(child)
+
+
+func _on_card_input(event: InputEvent, card: CardData) -> void:
+	if not (event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+
+	if combat_engine.phase != CombatEngine.Phase.PLAYER_TURN:
+		return
+
+	# Deselect if same card
+	if selected_card == card:
+		selected_card = null
+		_update_card_highlights()
+		return
+
+	selected_card = card
+
+	if not combat_engine.can_play_card(card):
+		_log("[color=red]Not enough energy![/color]")
+		selected_card = null
+		return
+
+	# Auto-play self-target and untargeted cards
+	match card.target_type:
+		CardData.TargetType.SELF, CardData.TargetType.NONE:
+			_play_selected_card(combat_engine.player_stats)
+		CardData.TargetType.ALL_ENEMIES:
+			_play_selected_card(null)
+		CardData.TargetType.SINGLE_ENEMY:
+			_update_card_highlights()
+			_log("Select a target...")
+
+
+func _play_selected_card(target: CombatantStats) -> void:
+	if not selected_card:
+		return
+	var card = selected_card
+	selected_card = null
+	combat_engine.play_card(card, target)
+	_refresh_ui()
+
+
+func _update_card_highlights() -> void:
+	for card in card_nodes:
+		var panel: PanelContainer = card_nodes[card]
+		if card == selected_card:
+			panel.modulate = Color(1.4, 1.4, 1.1)
+		elif not combat_engine.can_play_card(card):
+			panel.modulate = Color(0.5, 0.5, 0.5)
+		else:
+			panel.modulate = Color.WHITE
+
+
+# ============================================================
+# ENEMY UI
+# ============================================================
+
+func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
+	var panel = PanelContainer.new()
+	panel.custom_minimum_size = Vector2(220, 220)
+
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.18, 0.15, 0.2)
+	style.set_corner_radius_all(8)
+	style.set_border_width_all(2)
+	style.border_color = Color(0.5, 0.4, 0.5)
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 14
+	style.content_margin_bottom = 14
+	panel.add_theme_stylebox_override("panel", style)
+
+	var vbox = VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(vbox)
+
+	var name_lbl = Label.new()
+	name_lbl.text = enemy.enemy_data.enemy_name
+	name_lbl.add_theme_font_size_override("font_size", 24)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(name_lbl)
+
+	var hp_lbl = Label.new()
+	hp_lbl.name = "HP"
+	hp_lbl.add_theme_font_size_override("font_size", 20)
+	hp_lbl.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
+	hp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(hp_lbl)
+
+	var block_lbl = Label.new()
+	block_lbl.name = "Block"
+	block_lbl.add_theme_font_size_override("font_size", 18)
+	block_lbl.add_theme_color_override("font_color", Color(0.3, 0.6, 0.9))
+	block_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(block_lbl)
+
+	var status_lbl = Label.new()
+	status_lbl.name = "Statuses"
+	status_lbl.add_theme_font_size_override("font_size", 14)
+	status_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.6))
+	status_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(status_lbl)
+
+	var intent_lbl = Label.new()
+	intent_lbl.name = "Intent"
+	intent_lbl.add_theme_font_size_override("font_size", 16)
+	intent_lbl.add_theme_color_override("font_color", Color(0.95, 0.85, 0.5))
+	intent_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(intent_lbl)
+
+	# Click to target
+	panel.gui_input.connect(_on_enemy_input.bind(enemy))
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	return panel
+
+
+func _on_enemy_input(event: InputEvent, enemy: EnemyCombatState) -> void:
+	if not (event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if selected_card and not enemy.stats.is_dead():
+		_play_selected_card(enemy.stats)
+
+
+func _update_enemy_panel(enemy: EnemyCombatState) -> void:
+	var panel: PanelContainer = enemy_nodes.get(enemy)
+	if not panel:
+		return
+
+	var vbox = panel.get_child(0)
+	var hp_lbl: Label = vbox.get_node("HP")
+	var block_lbl: Label = vbox.get_node("Block")
+	var status_lbl: Label = vbox.get_node("Statuses")
+	var intent_lbl: Label = vbox.get_node("Intent")
+
+	hp_lbl.text = "HP: %d / %d" % [enemy.stats.current_hp, enemy.stats.max_hp]
+
+	if enemy.stats.block > 0:
+		block_lbl.text = "Block: %d" % enemy.stats.block
+		block_lbl.visible = true
+	else:
+		block_lbl.text = ""
+		block_lbl.visible = false
+
+	status_lbl.text = _format_statuses(enemy.stats)
+	status_lbl.visible = status_lbl.text != ""
+
+	if enemy.current_intent:
+		var txt = enemy.current_intent.move_name
+		match enemy.current_intent.intent_type:
+			EnemyMove.IntentType.ATTACK:
+				for effect in enemy.current_intent.effects:
+					if effect is DamageEffect:
+						var modified = effect.value
+						modified += enemy.stats.get_status_stacks(StatusEffects.STRENGTH)
+						if enemy.stats.has_status(StatusEffects.WEAK):
+							modified = int(modified * 0.75)
+						modified = maxi(0, modified)
+						if modified != effect.value:
+							txt += " %d [%d]" % [effect.value, modified]
+						else:
+							txt += " (%d)" % effect.value
+						break
+			EnemyMove.IntentType.DEFEND:
+				for effect in enemy.current_intent.effects:
+					if effect is BlockEffect:
+						var modified = effect.value + enemy.stats.get_status_stacks(StatusEffects.DEXTERITY)
+						if modified != effect.value:
+							txt += " %d [%d]" % [effect.value, modified]
+						else:
+							txt += " (%d)" % effect.value
+						break
+			EnemyMove.IntentType.DEBUFF:
+				for effect in enemy.current_intent.effects:
+					if effect is StatusApplyEffect:
+						txt += " (%s)" % effect.status_effect.effect_name
+						break
+		intent_lbl.text = "Intent: " + txt
+	else:
+		intent_lbl.text = ""
+
+	panel.modulate = Color(0.4, 0.4, 0.4, 0.5) if enemy.stats.is_dead() else Color.WHITE
+
+
+# ============================================================
+# FULL UI REFRESH
+# ============================================================
+
+func _refresh_ui() -> void:
+	if not combat_engine or not combat_engine.player_stats:
+		return
+
+	# Player stats
+	hp_label.text = "HP: %d / %d" % [combat_engine.player_stats.current_hp,
+		combat_engine.player_stats.max_hp]
+	block_label.text = "Block: %d" % combat_engine.player_stats.block
+	energy_label.text = "Energy: %d / %d" % [combat_engine.energy, CombatEngine.MAX_ENERGY]
+
+	if RunManager.passion:
+		var tier = RunManager.get_passion_tier()
+		passion_label.text = "Passion: %d (%s)" % [
+			RunManager.passion.current_value, PassionState.tier_name(tier)]
+		if RunManager.current_character:
+			var t = RunManager.current_character.passion_thresholds
+			var c = RunManager.current_character
+			passion_label.tooltip_text = (
+				"Passion determines which personality dominates.\n" +
+				"High = %s (Primary)  |  Low = %s (Secondary)\n\n" % [
+					c.primary_personality, c.secondary_personality] +
+				"Blazing: %d+  (Primary at full power)\n" % t[0] +
+				"Inspired: %d-%d  (Primary favored)\n" % [t[1], t[0] - 1] +
+				"Steady: %d-%d  (Balanced)\n" % [t[2], t[1] - 1] +
+				"Wavering: %d-%d  (Secondary favored)\n" % [t[3], t[2] - 1] +
+				"Hollow: <%d  (Secondary at full power)" % t[3])
+	else:
+		passion_label.text = "Passion: --"
+
+	player_status_label.text = _format_statuses(combat_engine.player_stats)
+
+	# Piles
+	draw_label.text = "Draw: %d" % combat_engine.piles.draw_pile.size()
+	discard_label.text = "Discard: %d" % combat_engine.piles.discard_pile.size()
+	exhaust_label.text = "Exhaust: %d" % combat_engine.piles.exhaust_pile.size()
+
+	# Hand
+	for child in hand_container.get_children():
+		child.queue_free()
+	card_nodes.clear()
+
+	for card in combat_engine.piles.hand:
+		var panel = _create_card_panel(card)
+		hand_container.add_child(panel)
+		card_nodes[card] = panel
+
+	# Enemies
+	for enemy in combat_engine.enemies:
+		_update_enemy_panel(enemy)
+
+	_update_card_highlights()
+
+	# End turn button
+	var can_act = combat_engine.phase == CombatEngine.Phase.PLAYER_TURN
+	end_turn_btn.disabled = not can_act
+
+
+# ============================================================
+# COMBAT LOG
+# ============================================================
+
+func _format_statuses(stats: CombatantStats) -> String:
+	var parts: PackedStringArray = []
+	for effect in stats.statuses:
+		var stacks = stats.statuses[effect]
+		if stacks > 0:
+			parts.append("%s(%d)" % [effect.effect_name, stacks])
+	return "  ".join(parts)
+
+
+func _log(msg: String) -> void:
+	log_text.append_text(msg + "\n")
+
+
+func _log_relic_activations(trigger: RelicData.RelicTrigger) -> void:
+	for relic in RunManager.relics:
+		if relic.trigger == trigger:
+			_log("[color=cyan]>> %s: %s[/color]" % [relic.relic_name, relic.description])
+
+
+# ============================================================
+# EVENT HANDLERS
+# ============================================================
+
+func _on_combat_started() -> void:
+	for enemy in combat_engine.enemies:
+		var panel = _create_enemy_panel(enemy)
+		enemy_container.add_child(panel)
+		enemy_nodes[enemy] = panel
+	# Log relic activations from combat start
+	_log_relic_activations(RelicData.RelicTrigger.ON_COMBAT_START)
+	_refresh_ui()
+
+
+func _on_card_played(card: CardData, _target) -> void:
+	_log("Played [color=white]%s[/color]." % card.card_name)
+	_refresh_ui()
+
+
+func _on_card_exhausted(card: CardData) -> void:
+	_log("[color=gray]%s exhausted.[/color]" % card.card_name)
+
+
+func _on_player_turn_started() -> void:
+	_log("[color=cyan]--- Your Turn %d ---[/color]" % combat_engine.turn_number)
+	_log_relic_activations(RelicData.RelicTrigger.ON_TURN_START)
+	_refresh_ui()
+
+
+func _on_enemy_turn_started() -> void:
+	_log("[color=orange]--- Enemy Turn ---[/color]")
+	for enemy in combat_engine.enemies:
+		if not enemy.stats.is_dead() and enemy.current_intent:
+			_log("%s uses [color=white]%s[/color]!" % [
+				enemy.enemy_data.enemy_name, enemy.current_intent.move_name])
+	_refresh_ui()
+
+
+func _on_player_damaged(amount: int, new_hp: int) -> void:
+	_log("[color=red]You take %d damage! (HP: %d)[/color]" % [amount, new_hp])
+	_refresh_ui()
+
+
+func _on_enemy_damaged(enemy, amount: int, new_hp: int) -> void:
+	_log("%s takes [color=yellow]%d damage[/color]. (HP: %d)" % [
+		enemy.enemy_data.enemy_name, amount, new_hp])
+	_refresh_ui()
+
+
+func _on_enemy_died(enemy) -> void:
+	_log("[color=green]%s defeated![/color]" % enemy.enemy_data.enemy_name)
+	_refresh_ui()
+
+
+func _on_block_gained(target, amount: int) -> void:
+	if target == combat_engine.player_stats:
+		_log("Gained [color=cyan]%d Block[/color]." % amount)
+	else:
+		for enemy in combat_engine.enemies:
+			if enemy.stats == target:
+				_log("%s gains [color=cyan]%d Block[/color]." % [
+					enemy.enemy_data.enemy_name, amount])
+				break
+	_refresh_ui()
+
+
+func _on_passion_changed(old_value: int, new_value: int) -> void:
+	var diff = new_value - old_value
+	if diff > 0:
+		_log("[color=orange]Passion +%d (%d)[/color]" % [diff, new_value])
+	else:
+		_log("[color=orange]Passion %d (%d)[/color]" % [diff, new_value])
+	_refresh_ui()
+
+
+func _on_status_applied(target, effect: StatusEffectData, stacks: int) -> void:
+	var name = _get_combatant_name(target)
+	var color = "green" if effect.is_buff else "magenta"
+	_log("[color=%s]%s: +%d %s[/color]" % [color, name, stacks, effect.effect_name])
+	_refresh_ui()
+
+
+func _on_status_removed(target, effect: StatusEffectData) -> void:
+	var name = _get_combatant_name(target)
+	_log("[color=gray]%s: %s wore off.[/color]" % [name, effect.effect_name])
+	_refresh_ui()
+
+
+func _get_combatant_name(stats) -> String:
+	if stats == combat_engine.player_stats:
+		return "You"
+	for enemy in combat_engine.enemies:
+		if enemy.stats == stats:
+			return enemy.enemy_data.enemy_name
+	return "???"
+
+
+func _on_combat_won() -> void:
+	_log("\n[color=gold]========== VICTORY! ==========[/color]")
+	AudioManager.play_sfx("gold_gain")
+	end_turn_btn.disabled = true
+	# Sync HP back to RunManager
+	RunManager.current_hp = combat_engine.player_stats.current_hp
+	# Process end-of-combat relics
+	combat_engine.process_combat_end_relics()
+	for relic in RunManager.relics:
+		if relic.trigger == RelicData.RelicTrigger.ON_COMBAT_END:
+			_log("[color=cyan]%s: %s[/color]" % [relic.relic_name, relic.description])
+	# Show continue button
+	_show_continue_button("Continue", _on_continue_pressed)
+
+
+func _on_combat_lost() -> void:
+	_log("\n[color=red]========== DEFEAT ==========[/color]")
+	end_turn_btn.disabled = true
+	RunManager.end_run(false)
+	_show_continue_button("Game Over", _on_game_over_pressed)
+
+
+func _on_end_turn_pressed() -> void:
+	if combat_engine.phase == CombatEngine.Phase.PLAYER_TURN:
+		AudioManager.play_sfx("button_click")
+		selected_card = null
+		combat_engine.end_player_turn()
+
+
+func _show_continue_button(text: String, callback: Callable) -> void:
+	continue_btn = Button.new()
+	continue_btn.text = text
+	continue_btn.custom_minimum_size = Vector2(200, 60)
+	continue_btn.add_theme_font_size_override("font_size", 22)
+	continue_btn.pressed.connect(callback)
+	# Add next to the end turn button
+	end_turn_btn.get_parent().add_child(continue_btn)
+
+
+func _on_continue_pressed() -> void:
+	if RunManager.pending_relic_reward:
+		# Check if relics are actually available before showing relic screen
+		var owned = RunManager.get_owned_relic_names()
+		var has_relics = false
+		if RunManager.pending_relic_is_boss:
+			has_relics = RelicPool.get_boss_reward_choices(RngManager.loot_rng, owned).size() > 0
+		else:
+			has_relics = RelicPool.get_reward_choices(RngManager.loot_rng, 3, owned).size() > 0
+		RunManager.pending_relic_reward = false
+		if has_relics:
+			get_tree().change_scene_to_file("res://scenes/reward/relic_reward_scene.tscn")
+		else:
+			get_tree().change_scene_to_file("res://scenes/reward/card_reward_scene.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/reward/card_reward_scene.tscn")
+
+
+func _on_game_over_pressed() -> void:
+	# For now, restart by going back to map (which will create a new run)
+	RunManager.run_active = false
+	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")

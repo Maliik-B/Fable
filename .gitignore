@@ -1,0 +1,16 @@
+# Godot
+.godot/
+*.uid
+*.import
+*.translation
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.mcp/
+
+# Claude
+CLAUDE.md
+.claude/
+.mcp.json
