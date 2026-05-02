@@ -1,54 +1,36 @@
-# Copy All Errors — Godot Editor Plugin
+# Fable -- Narrative Deckbuilder
 
-A simple Godot 4.x editor plugin that adds a **"Copy All"** button to the Debugger's **Errors** panel, allowing you to copy all errors and warnings to the clipboard with one click.
+A roguelike deckbuilder in Godot 4 where story choices shape gameplay. Inspired by Slay the Spire's combat loop, Fable adds a narrative layer with branching visual novel segments, a passion system that shifts combat dynamics, and dual-personality characters that evolve across acts.
 
 ![Godot 4.x](https://img.shields.io/badge/Godot-4.x-blue?logo=godotengine&logoColor=white)
+![GDScript](https://img.shields.io/badge/GDScript-478CBF?logo=godotengine&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
 ## Features
 
-- Injects a **Copy All** (复制全部) button into the built-in Errors panel toolbar
-- Copies all errors and warnings in a clean, formatted text
-- Distinguishes between **E** (error) and **W** (warning) entries
-- Includes child details (stack trace, error codes, etc.)
-- Button shows a brief "Copied N items!" flash feedback
-- Works with both English and Chinese editor locales
+- **Passion System** -- A meter influenced by story choices that shifts characters between primary and secondary personalities, changing available cards and combat strategy
+- **Dual-Personality Characters** -- Each character has two distinct playstyles (e.g., magic vs. physical) that emerge based on Passion level
+- **Narrative-Driven Runs** -- Visual novel segments between acts configure the realm ahead (encounter count, active buffs/debuffs, map layout)
+- **Combat Engine** -- Turn-based card combat with energy, block, status effects, and a draw/discard/exhaust pile system
+- **Procedural Map** -- Slay the Spire-style node maps with combat, event, rest, shop, and boss encounters
+- **Perk System** -- Per-act perk selection from universal and character-specific pools
+- **Card & Relic Pools** -- Categorized cards (attack, skill, power) and relics with rarity tiers
 
-## Installation
-
-### From GitHub
-
-1. Download or clone this repository.
-2. Copy the `addons/copy_all_errors` folder into your project's `addons/` directory.
-3. In Godot, go to **Project → Project Settings → Plugins** and enable **Copy All Errors**.
-
-### From Godot Asset Library
-
-_(Coming soon)_
-
-## Usage
-
-1. Run your project and trigger some errors / warnings.
-2. Open the **Debugger → Errors** panel at the bottom of the editor.
-3. Click the **复制全部** (Copy All) button next to "Collapse All".
-4. Paste the copied content anywhere — issue trackers, chat, AI assistants, etc.
-
-### Example Output
+## Project Structure
 
 ```
-E 0:00:02:145   MyScript.gd:42 — Attempted to call function 'foo' on a null instance.
-  <Error> Method not found
-  res://scripts/MyScript.gd:42
-
-W 0:00:03:012   AnotherScript.gd:10 — UNUSED_VARIABLE
-  <GDScript Warning> The local variable 'bar' is declared but never used.
-  res://scripts/AnotherScript.gd:10
+scenes/          # Combat, map, event, shop, rest, reward scenes
+scripts/
+  autoloads/     # Audio, events, RNG, run management
+  core/          # Card data, combat engine, enemy AI, map generator,
+                   passion state, status effects, pile management
+addons/          # Third-party editor plugins
+docs/            # Game design doc, architecture, implementation guide
 ```
 
-## Compatibility
+## Status
 
-- **Godot 4.0+** (tested on 4.5 / 4.6.1)
-- Works on Windows, macOS, and Linux
+In development. Core systems (combat, map generation, card/relic pools, event system, passion mechanics) are implemented. Narrative content and visual polish are next.
 
 ## License
 
