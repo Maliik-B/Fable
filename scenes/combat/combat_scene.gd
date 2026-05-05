@@ -39,6 +39,61 @@ const ENEMY_SPRITES = {
 	"Hollow Warden": ["res://assets/sprites/enemies/fire_worm/Fire Worm/Sprites/Worm/Idle.png", 12, 12, 62, 52],
 	"Fable's End": ["res://assets/sprites/bosses/evil_wizard_2/EVil Wizard 2/Sprites/Idle.png", 100, 64, 72, 110],
 }
+# Card icon mapping: card_name -> full res:// path
+const _CR = "res://assets/sprites/icons/clockwork_raven/Clockwork raven - Weapons and Potions - Free pack/individual_64x64/"
+const _ITV = "res://assets/sprites/icons/in_the_void/individual/"
+const _CUS = "res://assets/sprites/icons/custom/"
+const CARD_ICONS = {
+	# Starter attacks
+	"Strike": _CR + "tile000.png",
+	"Bash": _CR + "tile025.png",
+	"Noxious Strike": _CUS + "noxious_strike.png",
+	"Cleave": _CR + "tile004.png",
+	"Flame Strike": _CUS + "flame_strike.png",
+	# Generic attacks
+	"Heavy Strike": _CR + "tile008.png",
+	"Twin Strike": _CUS + "twin_strike.png",
+	"Sweep": _CR + "tile011.png",
+	"Reckless Swing": _CR + "tile035.png",
+	"Carnage": _CR + "tile041.png",
+	"Poison Fang": _CUS + "poison_fang.png",
+	"Armor Break": _CR + "tile016.png",
+	"Immolate": _CUS + "immolate.png",
+	"Execute": _CR + "tile012.png",
+	# Primary (Magic) attacks
+	"Soul Flare": _CUS + "soul_flare.png",
+	"Arcane Bolt": _CUS + "arcane_bolt.png",
+	"Blazing Lance": _CR + "tile020.png",
+	"Nether Flames": _CUS + "nether_flames.png",
+	"Cataclysm": _CUS + "cataclysm.png",
+	# Secondary (Physical) attacks
+	"Power Slash": _CR + "tile006.png",
+	"Quick Jab": _CR + "tile005.png",
+	"Rampage": _CR + "tile050.png",
+	"Devastating Blow": _CR + "tile030.png",
+	# Starter skills
+	"Defend": _ITV + "shield.png",
+	"Meditate": _CUS + "meditate.png",
+	# Generic skills
+	"Iron Wave": _ITV + "gem_blue.png",
+	"Shield Bash": _ITV + "gauntlet.png",
+	"Battle Cry": _CUS + "battle_cry.png",
+	"Fortify": _ITV + "helmet.png",
+	"Dark Pact": _CUS + "dark_pact.png",
+	"Inner Fire": _CUS + "inner_fire.png",
+	"Weaken": _ITV + "scroll_red.png",
+	"Adrenaline": _CR + "tile083.png",
+	"Apparition": _CUS + "apparition.png",
+	# Primary (Magic) skills
+	"Spirit Ward": _CUS + "spirit_ward.png",
+	"Hex": _ITV + "scroll_purple.png",
+	"Soul Sacrifice": _CUS + "soul_sacrifice.png",
+	# Secondary (Physical) skills
+	"Brace": _ITV + "chestplate.png",
+	"Iron Curtain": _CUS + "iron_curtain.png",
+	"Riposte": _CR + "tile009.png",
+	"Bulwark": _ITV + "shield.png",
+}
 var _hp_trail_bars: Dictionary = {} # ProgressBar -> trail ProgressBar
 var _damage_flash: ColorRect
 var _dragging_card: CardData = null
@@ -831,15 +886,25 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 			art_style.set_border_width_all(1)
 			art_style.border_color = Color(0.55, 0.45, 0.15, 0.5)
 	art_frame.add_theme_stylebox_override("panel", art_style)
-	var art_icon = Label.new()
-	match card.card_type:
-		CardData.CardType.ATTACK: art_icon.text = "⚔"
-		CardData.CardType.SKILL: art_icon.text = "◆"
-		CardData.CardType.POWER: art_icon.text = "★"
-	art_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	art_icon.add_theme_font_size_override("font_size", 24)
-	art_icon.add_theme_color_override("font_color", style.border_color.lightened(0.3))
-	art_frame.add_child(art_icon)
+	var icon_file = CARD_ICONS.get(card.card_name, "")
+	if icon_file != "":
+		var art_icon = TextureRect.new()
+		art_icon.texture = load(icon_file)
+		art_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		art_icon.custom_minimum_size = Vector2(36, 36)
+		art_frame.add_child(art_icon)
+	else:
+		var art_lbl = Label.new()
+		match card.card_type:
+			CardData.CardType.ATTACK: art_lbl.text = "⚔"
+			CardData.CardType.SKILL: art_lbl.text = "◆"
+			CardData.CardType.POWER: art_lbl.text = "★"
+		art_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		art_lbl.add_theme_font_size_override("font_size", 24)
+		art_lbl.add_theme_color_override("font_color", style.border_color.lightened(0.3))
+		art_frame.add_child(art_lbl)
 	vbox.add_child(art_frame)
 
 	# Spacer
@@ -1747,15 +1812,25 @@ func _show_card_hover(card: CardData, source_panel: PanelContainer) -> void:
 		CardData.CardType.POWER:
 			art_s.bg_color = Color(0.3, 0.26, 0.1)
 	art.add_theme_stylebox_override("panel", art_s)
-	var art_icon = Label.new()
-	match card.card_type:
-		CardData.CardType.ATTACK: art_icon.text = "⚔"
-		CardData.CardType.SKILL: art_icon.text = "◆"
-		CardData.CardType.POWER: art_icon.text = "★"
-	art_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	art_icon.add_theme_font_size_override("font_size", 32)
-	art_icon.add_theme_color_override("font_color", style.border_color.lightened(0.3))
-	art.add_child(art_icon)
+	var icon_file2 = CARD_ICONS.get(card.card_name, "")
+	if icon_file2 != "":
+		var art_icon = TextureRect.new()
+		art_icon.texture = load(icon_file2)
+		art_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		art_icon.custom_minimum_size = Vector2(48, 48)
+		art.add_child(art_icon)
+	else:
+		var art_lbl = Label.new()
+		match card.card_type:
+			CardData.CardType.ATTACK: art_lbl.text = "⚔"
+			CardData.CardType.SKILL: art_lbl.text = "◆"
+			CardData.CardType.POWER: art_lbl.text = "★"
+		art_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		art_lbl.add_theme_font_size_override("font_size", 32)
+		art_lbl.add_theme_color_override("font_color", style.border_color.lightened(0.3))
+		art.add_child(art_lbl)
 	vbox.add_child(art)
 
 	# Description
