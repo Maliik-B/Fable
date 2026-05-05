@@ -230,6 +230,10 @@ func _create_upgrade_card(card: CardData, index: int) -> PanelContainer:
 			style.bg_color = Color(0.25, 0.22, 0.1)
 			style.border_color = Color(0.8, 0.7, 0.2)
 
+	# Upgraded card green border tint
+	if card.upgraded:
+		style.border_color = style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
+
 	panel.add_theme_stylebox_override("panel", style)
 
 	var vbox = VBoxContainer.new()

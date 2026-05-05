@@ -215,6 +215,10 @@ func _create_shop_card(card: CardData, price: int) -> PanelContainer:
 			style.bg_color = Color(0.25, 0.22, 0.1)
 			style.border_color = Color(0.8, 0.7, 0.2)
 
+	# Upgraded card green border tint
+	if card.upgraded:
+		style.border_color = style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
+
 	panel.add_theme_stylebox_override("panel", style)
 
 	if not can_afford:
@@ -513,6 +517,9 @@ func _show_deck_for_removal() -> void:
 			CardData.CardType.POWER:
 				btn_style.bg_color = Color(0.3, 0.27, 0.12)
 				btn_style.border_color = Color(0.6, 0.5, 0.15)
+		# Upgraded card green border tint
+		if card.upgraded:
+			btn_style.border_color = btn_style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
 		btn_style.set_border_width_all(2)
 		btn.add_theme_stylebox_override("normal", btn_style)
 

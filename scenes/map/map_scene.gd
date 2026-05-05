@@ -19,6 +19,7 @@ var passion_label: Label
 var relic_btn: Button
 var deck_btn: Button
 var timer_label: Label
+var seed_label: Label
 var info_label: Label
 var popup_overlay: PanelContainer
 
@@ -211,6 +212,11 @@ func _build_bottom_bar(parent: VBoxContainer) -> void:
 	timer_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
 	bar.add_child(timer_label)
 
+	seed_label = Label.new()
+	seed_label.add_theme_font_size_override("font_size", 14)
+	seed_label.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+	bar.add_child(seed_label)
+
 
 func _update_bottom_bar() -> void:
 	hp_label.text = "HP: %d / %d" % [RunManager.current_hp, RunManager.max_hp]
@@ -223,6 +229,7 @@ func _update_bottom_bar() -> void:
 	relic_btn.text = "Relics: %d" % RunManager.relics.size()
 	deck_btn.text = "Deck: %d" % RunManager.current_deck.size()
 	timer_label.text = RunManager.get_run_time_string()
+	seed_label.text = "Seed: %d" % RngManager.run_seed
 
 
 # ============================================================
@@ -314,6 +321,20 @@ func _show_deck_popup() -> void:
 	popup_overlay = _create_popup_panel("Deck (%d cards)" % RunManager.current_deck.size())
 	var content: VBoxContainer = popup_overlay.get_meta("content")
 
+	# Deck stats by card type
+	var type_counts := {CardData.CardType.ATTACK: 0, CardData.CardType.SKILL: 0, CardData.CardType.POWER: 0}
+	for card in RunManager.current_deck:
+		type_counts[card.card_type] = type_counts.get(card.card_type, 0) + 1
+	var stats_lbl = Label.new()
+	stats_lbl.text = "%d Attack / %d Skill / %d Power" % [
+		type_counts[CardData.CardType.ATTACK],
+		type_counts[CardData.CardType.SKILL],
+		type_counts[CardData.CardType.POWER]]
+	stats_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats_lbl.add_theme_font_size_override("font_size", 16)
+	stats_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	content.add_child(stats_lbl)
+
 	# Sort cards by type then name
 	var sorted_deck = RunManager.current_deck.duplicate()
 	sorted_deck.sort_custom(func(a, b):
@@ -348,6 +369,9 @@ func _show_deck_popup() -> void:
 			CardData.CardType.POWER:
 				style.bg_color = Color(0.22, 0.2, 0.1)
 				style.border_color = Color(0.7, 0.6, 0.2)
+		# Upgraded card green border tint
+		if card.upgraded:
+			style.border_color = style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
 		panel.add_theme_stylebox_override("panel", style)
 
 		var vb = VBoxContainer.new()

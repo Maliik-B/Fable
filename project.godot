@@ -20,6 +20,7 @@ RngManager="*res://scripts/autoloads/rng_manager.gd"
 RunManager="*res://scripts/autoloads/run_manager.gd"
 AudioManager="*res://scripts/autoloads/audio_manager.gd"
 SceneTransition="*res://scripts/autoloads/scene_transition.gd"
+PauseMenu="*res://scripts/autoloads/pause_menu.gd"
 
 [display]
 
