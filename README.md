@@ -10,6 +10,12 @@ Story choices shape gameplay. A passion system shifts characters between dual pe
 
 ---
 
+## Combat
+
+![Combat Turn](screenshots/combat_turn.gif)
+
+*Play cards, apply status effects, manage energy and block — a full turn of Fable's combat system.*
+
 ## Screenshots
 
 | | |
