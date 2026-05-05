@@ -14,3 +14,4 @@ desktop.ini
 CLAUDE.md
 .claude/
 .mcp.json
+.playwright-mcp/
