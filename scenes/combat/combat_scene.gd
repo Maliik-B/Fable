@@ -28,6 +28,17 @@ var continue_btn: Button
 var _main_container: MarginContainer
 var _hover_popup: PanelContainer
 var _is_animating_card := false
+
+# Sprite portrait mapping: enemy_name -> [sprite_path, region_x, region_y, region_w, region_h]
+# Regions are tight crops around the actual sprite content (with padding)
+const ENEMY_SPRITES = {
+	"Slime": ["res://assets/sprites/enemies/monsters_main/Monsters_Creatures_Fantasy/Mushroom/Idle.png", 58, 56, 36, 52],
+	"Goblin": ["res://assets/sprites/enemies/monsters_main/Monsters_Creatures_Fantasy/Goblin/Idle.png", 52, 58, 46, 50],
+	"Orc Brute": ["res://assets/sprites/enemies/monsters_main/Monsters_Creatures_Fantasy/Skeleton/Idle.png", 52, 42, 62, 66],
+	"Realm Guardian": ["res://assets/sprites/enemies/monsters_main/Monsters_Creatures_Fantasy/Flying eye/Flight.png", 50, 54, 56, 46],
+	"Hollow Warden": ["res://assets/sprites/enemies/fire_worm/Fire Worm/Sprites/Worm/Idle.png", 12, 12, 62, 52],
+	"Fable's End": ["res://assets/sprites/bosses/evil_wizard_2/EVil Wizard 2/Sprites/Idle.png", 100, 64, 72, 110],
+}
 var _hp_trail_bars: Dictionary = {} # ProgressBar -> trail ProgressBar
 var _damage_flash: ColorRect
 var _dragging_card: CardData = null
@@ -1050,33 +1061,34 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 	vbox.add_theme_constant_override("separation", 6)
 	panel.add_child(vbox)
 
-	# Enemy portrait area
-	var portrait = PanelContainer.new()
-	portrait.custom_minimum_size = Vector2(0, 70)
-	var port_style = StyleBoxFlat.new()
-	port_style.set_corner_radius_all(6)
-	port_style.content_margin_top = 8
-	port_style.content_margin_bottom = 8
-	var enemy_colors = {
-		"Slime": [Color(0.15, 0.3, 0.12), Color(0.3, 0.6, 0.2), "~"],
-		"Goblin": [Color(0.3, 0.2, 0.1), Color(0.6, 0.4, 0.15), "⚑"],
-		"Orc Brute": [Color(0.3, 0.12, 0.12), Color(0.7, 0.25, 0.2), "♦"],
-		"Realm Guardian": [Color(0.2, 0.2, 0.3), Color(0.5, 0.5, 0.8), "◆"],
-		"Hollow Warden": [Color(0.15, 0.1, 0.2), Color(0.5, 0.3, 0.6), "☽"],
-		"Fable's End": [Color(0.3, 0.08, 0.08), Color(0.8, 0.15, 0.1), "★"],
-	}
-	var ec = enemy_colors.get(enemy.enemy_data.enemy_name, [Color(0.2, 0.18, 0.22), Color(0.5, 0.4, 0.5), "?"])
-	port_style.bg_color = ec[0]
-	port_style.set_border_width_all(1)
-	port_style.border_color = ec[1].darkened(0.3)
-	portrait.add_theme_stylebox_override("panel", port_style)
-	var port_icon = Label.new()
-	port_icon.text = ec[2]
-	port_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	port_icon.add_theme_font_size_override("font_size", 36)
-	port_icon.add_theme_color_override("font_color", ec[1])
-	portrait.add_child(port_icon)
-	vbox.add_child(portrait)
+	# Enemy portrait area — sprite from spritesheet
+	var sprite_info = ENEMY_SPRITES.get(enemy.enemy_data.enemy_name)
+	if sprite_info:
+		var sheet: Texture2D = load(sprite_info[0])
+		var atlas = AtlasTexture.new()
+		atlas.atlas = sheet
+		atlas.region = Rect2(sprite_info[1], sprite_info[2], sprite_info[3], sprite_info[4])
+		var portrait = TextureRect.new()
+		portrait.texture = atlas
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		portrait.custom_minimum_size = Vector2(120, 120)
+		vbox.add_child(portrait)
+	else:
+		# Fallback for unknown enemies
+		var portrait = PanelContainer.new()
+		portrait.custom_minimum_size = Vector2(0, 70)
+		var port_style = StyleBoxFlat.new()
+		port_style.set_corner_radius_all(6)
+		port_style.bg_color = Color(0.2, 0.18, 0.22)
+		portrait.add_theme_stylebox_override("panel", port_style)
+		var port_icon = Label.new()
+		port_icon.text = "?"
+		port_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		port_icon.add_theme_font_size_override("font_size", 36)
+		portrait.add_child(port_icon)
+		vbox.add_child(portrait)
 
 	var name_lbl = Label.new()
 	name_lbl.text = enemy.enemy_data.enemy_name
