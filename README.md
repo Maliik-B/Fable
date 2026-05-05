@@ -94,7 +94,11 @@ docs/            Game design doc, architecture rationale, implementation guide
 
 ## Status
 
-Core gameplay loop is complete: title > character select > map navigation > combat > rewards > shop > rest > events > boss > act transitions > victory. Audio, visual polish, and UX enhancements are in place. Active development continues on additional characters, narrative content, and balance tuning.
+**Early development -- core scaffolding.**
+
+The full gameplay loop is functional: title > character select > map navigation > combat > rewards > shop > rest > events > boss > act transitions > victory. One playable character (Emo Hybrid Caster) with 34+ cards, 18 relics, and 8 narrative events. Audio, visual polish, and UX are in place.
+
+Still ahead: two additional characters, narrative content (visual novel segments, realm configuration), balance tuning, perks system UI, and real art/audio assets.
 
 ---
 
