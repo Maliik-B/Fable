@@ -3,6 +3,8 @@ extends Control
 ## If more acts remain, advances to the next act. Otherwise shows run victory.
 
 var is_final_act: bool
+var _particles: Array[ColorRect] = []
+var _time := 0.0
 
 
 func _ready() -> void:
@@ -12,6 +14,11 @@ func _ready() -> void:
 		AudioManager.play_music("victory")
 	else:
 		AudioManager.stop_music()
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	_update_particles(delta)
 
 
 func _build_ui() -> void:
@@ -37,6 +44,9 @@ void fragment() {
 	mat.shader = shader
 	vignette.material = mat
 	add_child(vignette)
+
+	# Rising golden particles (behind text)
+	_spawn_particles()
 
 	var margin = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -177,6 +187,37 @@ func _add_stat_line(parent: VBoxContainer, label: String, value: String,
 	val.add_theme_font_size_override("font_size", 20)
 	val.add_theme_color_override("font_color", color)
 	hbox.add_child(val)
+
+
+func _spawn_particles() -> void:
+	for i in 28:
+		var p = ColorRect.new()
+		p.custom_minimum_size = Vector2(2, 2)
+		p.size = Vector2(2, 2)
+		var brightness = randf_range(0.7, 1.0)
+		p.color = Color(
+			brightness,
+			brightness * 0.85,
+			brightness * 0.3,
+			randf_range(0.15, 0.4))
+		p.position = Vector2(randf_range(0, 1920), randf_range(0, 1080))
+		p.set_meta("vel_y", randf_range(-15, -5))
+		p.set_meta("phase", randf_range(0, TAU))
+		add_child(p)
+		_particles.append(p)
+
+
+func _update_particles(delta: float) -> void:
+	for p in _particles:
+		var vy: float = p.get_meta("vel_y")
+		var phase: float = p.get_meta("phase")
+		p.position.x += sin(_time * 0.4 + phase) * 0.4
+		p.position.y += vy * delta
+		p.modulate.a = 0.3 + sin(_time * 0.7 + phase) * 0.15
+		# Wrap at top back to bottom
+		if p.position.y < -10:
+			p.position.y = 1090
+			p.position.x = randf_range(0, 1920)
 
 
 func _on_next_act() -> void:

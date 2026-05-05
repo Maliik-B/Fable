@@ -111,6 +111,41 @@ func _build_ui() -> void:
 	start_btn.pressed.connect(_on_start)
 	center.add_child(start_btn)
 
+	# Settings button
+	var settings_btn = Button.new()
+	settings_btn.text = "Settings"
+	settings_btn.custom_minimum_size = Vector2(220, 50)
+	settings_btn.add_theme_font_size_override("font_size", 18)
+	settings_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	settings_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	settings_btn.modulate.a = 0.0
+
+	var settings_style = StyleBoxFlat.new()
+	settings_style.set_corner_radius_all(10)
+	settings_style.set_border_width_all(2)
+	settings_style.bg_color = Color(0.15, 0.12, 0.2)
+	settings_style.border_color = Color(0.7, 0.55, 0.3)
+	settings_style.content_margin_left = 16
+	settings_style.content_margin_right = 16
+	settings_style.content_margin_top = 8
+	settings_style.content_margin_bottom = 8
+	settings_btn.add_theme_stylebox_override("normal", settings_style)
+
+	var settings_hover = settings_style.duplicate()
+	settings_hover.bg_color = Color(0.22, 0.18, 0.3)
+	settings_hover.border_color = Color(0.9, 0.7, 0.35)
+	settings_btn.add_theme_stylebox_override("hover", settings_hover)
+
+	var settings_pressed = settings_style.duplicate()
+	settings_pressed.bg_color = Color(0.1, 0.08, 0.14)
+	settings_btn.add_theme_stylebox_override("pressed", settings_pressed)
+	settings_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	settings_btn.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))
+	settings_btn.add_theme_color_override("font_hover_color", Color(1.0, 0.9, 0.6))
+
+	settings_btn.pressed.connect(_on_settings)
+	center.add_child(settings_btn)
+
 	# Version / credit
 	var version_lbl = Label.new()
 	version_lbl.text = "v0.1 — Portfolio Build"
@@ -128,6 +163,7 @@ func _build_ui() -> void:
 	tween.tween_property(subtitle, "modulate:a", 1.0, 1.0).set_delay(0.8)
 	tween.tween_property(tagline, "modulate:a", 1.0, 1.0).set_delay(1.5)
 	tween.tween_property(start_btn, "modulate:a", 1.0, 0.8).set_delay(2.0)
+	tween.tween_property(settings_btn, "modulate:a", 1.0, 0.8).set_delay(2.3)
 
 
 func _add_vignette() -> void:
@@ -184,3 +220,8 @@ func _update_particles(delta: float) -> void:
 func _on_start() -> void:
 	AudioManager.play_sfx("button_click")
 	SceneTransition.change_scene("res://scenes/character_select/character_select_scene.tscn")
+
+
+func _on_settings() -> void:
+	AudioManager.play_sfx("button_click")
+	SceneTransition.change_scene("res://scenes/settings/settings_scene.tscn")

@@ -493,6 +493,18 @@ func _create_node_button(node: MapNode) -> Button:
 	btn.add_theme_stylebox_override("disabled", style.duplicate())
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
+	# Tooltip descriptions by node type
+	var tooltip_map = {
+		MapNode.NodeType.COMBAT: "Battle enemies for card rewards and gold",
+		MapNode.NodeType.ELITE: "Tough enemy — higher rewards + relic",
+		MapNode.NodeType.REST: "Rest to heal or upgrade a card",
+		MapNode.NodeType.SHOP: "Spend gold on cards, relics, and card removal",
+		MapNode.NodeType.EVENT: "A narrative encounter with choices",
+		MapNode.NodeType.MYSTERY: "Unknown — could be anything",
+		MapNode.NodeType.BOSS: "Defeat the act boss to advance",
+	}
+	btn.tooltip_text = tooltip_map.get(node.node_type, "")
+
 	btn.pressed.connect(_on_node_clicked.bind(node))
 	btn.mouse_entered.connect(_on_node_hover.bind(node))
 	btn.mouse_exited.connect(_on_node_unhover)
@@ -533,7 +545,26 @@ func _on_node_clicked(node: MapNode) -> void:
 
 
 func _on_node_hover(node: MapNode) -> void:
-	info_label.text = "%s (Floor %d)" % [MapNode.type_name(node.node_type), node.floor_num + 1]
+	var floor_str = "Floor %d" % (node.floor_num + 1)
+	match node.node_type:
+		MapNode.NodeType.COMBAT:
+			info_label.text = "Combat — %s" % floor_str
+		MapNode.NodeType.ELITE:
+			info_label.text = "Elite Combat — %s (Relic reward)" % floor_str
+		MapNode.NodeType.BOSS:
+			var boss_names = {1: "Realm Guardian", 2: "Hollow Warden", 3: "Fable's End"}
+			var boss_name = boss_names.get(RunManager.current_act, "???")
+			info_label.text = "Boss: %s — %s" % [boss_name, floor_str]
+		MapNode.NodeType.REST:
+			info_label.text = "Rest Site — %s" % floor_str
+		MapNode.NodeType.SHOP:
+			info_label.text = "Shop — %s" % floor_str
+		MapNode.NodeType.EVENT:
+			info_label.text = "Event — %s" % floor_str
+		MapNode.NodeType.MYSTERY:
+			info_label.text = "Mystery — %s" % floor_str
+		_:
+			info_label.text = "%s — %s" % [MapNode.type_name(node.node_type), floor_str]
 
 
 func _on_node_unhover() -> void:

@@ -2,10 +2,18 @@ extends Control
 ## Game Over screen shown when the player dies.
 ## Displays run statistics and offers a "Try Again" button to return to the title screen.
 
+var _particles: Array[ColorRect] = []
+var _time := 0.0
+
 
 func _ready() -> void:
 	_build_ui()
 	AudioManager.stop_music()
+
+
+func _process(delta: float) -> void:
+	_time += delta
+	_update_particles(delta)
 
 
 func _build_ui() -> void:
@@ -32,6 +40,9 @@ void fragment() {
 	mat.shader = shader
 	vignette.material = mat
 	add_child(vignette)
+
+	# Falling ember particles (behind text)
+	_spawn_particles()
 
 	# Center everything
 	var center = CenterContainer.new()
@@ -182,6 +193,36 @@ func _add_stat_row(parent: VBoxContainer, label: String, value: String, color: C
 	val_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	val_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	row.add_child(val_lbl)
+
+
+func _spawn_particles() -> void:
+	for i in 22:
+		var p = ColorRect.new()
+		p.custom_minimum_size = Vector2(3, 3)
+		p.size = Vector2(3, 3)
+		p.color = Color(
+			randf_range(0.6, 0.8),
+			randf_range(0.1, 0.3),
+			randf_range(0.05, 0.1),
+			randf_range(0.2, 0.5))
+		p.position = Vector2(randf_range(0, 1920), randf_range(0, 1080))
+		p.set_meta("vel_y", randf_range(10, 30))
+		p.set_meta("phase", randf_range(0, TAU))
+		add_child(p)
+		_particles.append(p)
+
+
+func _update_particles(delta: float) -> void:
+	for p in _particles:
+		var vy: float = p.get_meta("vel_y")
+		var phase: float = p.get_meta("phase")
+		p.position.x += sin(_time * 0.4 + phase) * 0.5
+		p.position.y += vy * delta
+		p.modulate.a = 0.3 + sin(_time * 0.6 + phase) * 0.15
+		# Wrap at bottom back to top
+		if p.position.y > 1090:
+			p.position.y = -10
+			p.position.x = randf_range(0, 1920)
 
 
 func _on_try_again() -> void:

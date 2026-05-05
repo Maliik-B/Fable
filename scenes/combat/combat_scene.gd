@@ -27,6 +27,9 @@ var enemy_nodes: Dictionary = {} # EnemyCombatState -> PanelContainer
 
 var continue_btn: Button
 var _main_container: MarginContainer
+var _hover_popup: PanelContainer
+var _is_animating_card := false
+var _hp_trail_bars: Dictionary = {} # ProgressBar -> trail ProgressBar
 
 
 func _ready() -> void:
@@ -171,8 +174,9 @@ func _build_player_bar() -> PanelContainer:
 	hp_label = _make_stat_label(Color(0.9, 0.3, 0.3))
 	hp_section.add_child(hp_label)
 
-	player_hp_bar = _make_hp_bar(180, 8)
-	hp_section.add_child(player_hp_bar)
+	var hp_bar_container = _make_hp_bar(180, 8)
+	hp_section.add_child(hp_bar_container)
+	player_hp_bar = hp_bar_container.get_child(1) as ProgressBar
 
 	block_label = _make_stat_label(Color(0.3, 0.6, 0.9))
 	bar.add_child(block_label)
@@ -242,24 +246,45 @@ func _build_bottom_area() -> HBoxContainer:
 	return bottom
 
 
-func _make_hp_bar(width: int, height: int) -> ProgressBar:
+func _make_hp_bar(width: int, height: int) -> Control:
+	# Container holds trail bar behind main bar
+	var container = Control.new()
+	container.custom_minimum_size = Vector2(width, height)
+
+	var trail = ProgressBar.new()
+	trail.custom_minimum_size = Vector2(width, height)
+	trail.size = Vector2(width, height)
+	trail.show_percentage = false
+	trail.max_value = 100
+	trail.value = 100
+	var trail_bg = StyleBoxFlat.new()
+	trail_bg.bg_color = Color(0.15, 0.08, 0.08)
+	trail_bg.set_corner_radius_all(3)
+	trail.add_theme_stylebox_override("background", trail_bg)
+	var trail_fill = StyleBoxFlat.new()
+	trail_fill.bg_color = Color(0.6, 0.15, 0.1, 0.6)
+	trail_fill.set_corner_radius_all(3)
+	trail.add_theme_stylebox_override("fill", trail_fill)
+	container.add_child(trail)
+
 	var bar = ProgressBar.new()
 	bar.custom_minimum_size = Vector2(width, height)
+	bar.size = Vector2(width, height)
 	bar.show_percentage = false
 	bar.max_value = 100
 	bar.value = 100
-
 	var bg_style = StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.15, 0.08, 0.08)
+	bg_style.bg_color = Color(0, 0, 0, 0)
 	bg_style.set_corner_radius_all(3)
 	bar.add_theme_stylebox_override("background", bg_style)
-
 	var fill_style = StyleBoxFlat.new()
 	fill_style.bg_color = Color(0.8, 0.2, 0.15)
 	fill_style.set_corner_radius_all(3)
 	bar.add_theme_stylebox_override("fill", fill_style)
+	container.add_child(bar)
 
-	return bar
+	_hp_trail_bars[bar] = trail
+	return container
 
 
 func _make_stat_label(color: Color) -> Label:
@@ -751,15 +776,17 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	panel.pivot_offset = Vector2(80, 110)
 
-	# Hover animation
+	# Hover animation + detail popup
 	panel.mouse_entered.connect(func():
 		if panel.modulate != Color(0.5, 0.5, 0.5):
 			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 			t.tween_property(panel, "scale", Vector2(1.08, 1.08), 0.12)
+			_show_card_hover(card, panel)
 	)
 	panel.mouse_exited.connect(func():
 		var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		t.tween_property(panel, "scale", Vector2.ONE, 0.12)
+		_hide_card_hover()
 	)
 
 	return panel
@@ -777,7 +804,7 @@ func _on_card_input(event: InputEvent, card: CardData) -> void:
 			and event.button_index == MOUSE_BUTTON_LEFT):
 		return
 
-	if combat_engine.phase != CombatEngine.Phase.PLAYER_TURN:
+	if combat_engine.phase != CombatEngine.Phase.PLAYER_TURN or _is_animating_card:
 		return
 
 	# Deselect if same card
@@ -805,12 +832,47 @@ func _on_card_input(event: InputEvent, card: CardData) -> void:
 
 
 func _play_selected_card(target: CombatantStats) -> void:
-	if not selected_card:
+	if not selected_card or _is_animating_card:
 		return
 	var card = selected_card
 	selected_card = null
-	combat_engine.play_card(card, target)
-	_refresh_ui()
+	var panel: PanelContainer = card_nodes.get(card)
+	if panel:
+		_is_animating_card = true
+		# Find target position
+		var target_pos := Vector2(960, 300)
+		if target:
+			for enemy in combat_engine.enemies:
+				if enemy.stats == target:
+					var epanel = enemy_nodes.get(enemy)
+					if epanel:
+						target_pos = epanel.global_position + epanel.size / 2.0
+					break
+		else:
+			# AoE — fly to center of enemy area
+			target_pos = enemy_container.global_position + enemy_container.size / 2.0
+
+		# Reparent card for animation
+		var start_pos = panel.global_position
+		panel.get_parent().remove_child(panel)
+		add_child(panel)
+		panel.global_position = start_pos
+		panel.z_index = 30
+
+		var t = create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		t.set_parallel(true)
+		t.tween_property(panel, "global_position", target_pos - panel.size / 2.0, 0.25)
+		t.tween_property(panel, "scale", Vector2(0.5, 0.5), 0.25)
+		t.tween_property(panel, "modulate:a", 0.0, 0.15).set_delay(0.15)
+		t.chain().tween_callback(func():
+			panel.queue_free()
+			_is_animating_card = false
+			combat_engine.play_card(card, target)
+			_refresh_ui()
+		)
+	else:
+		combat_engine.play_card(card, target)
+		_refresh_ui()
 
 
 func _update_card_highlights() -> void:
@@ -888,11 +950,16 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 	hp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(hp_lbl)
 
-	var enemy_hp_bar = _make_hp_bar(160, 8)
+	var hp_bar_container = _make_hp_bar(160, 8)
+	hp_bar_container.name = "HPBarContainer"
+	var enemy_hp_bar: ProgressBar = hp_bar_container.get_child(1)
 	enemy_hp_bar.name = "HPBar"
 	enemy_hp_bar.max_value = enemy.enemy_data.max_health
 	enemy_hp_bar.value = enemy.stats.current_hp
-	vbox.add_child(enemy_hp_bar)
+	var enemy_trail: ProgressBar = hp_bar_container.get_child(0)
+	enemy_trail.max_value = enemy.enemy_data.max_health
+	enemy_trail.value = enemy.stats.current_hp
+	vbox.add_child(hp_bar_container)
 
 	var block_lbl = Label.new()
 	block_lbl.name = "Block"
@@ -944,10 +1011,11 @@ func _update_enemy_panel(enemy: EnemyCombatState) -> void:
 
 	hp_lbl.text = "HP: %d / %d" % [enemy.stats.current_hp, enemy.stats.max_hp]
 
-	var hp_bar: ProgressBar = vbox.get_node_or_null("HPBar")
-	if hp_bar:
+	var hp_container = vbox.get_node_or_null("HPBarContainer")
+	if hp_container:
+		var hp_bar: ProgressBar = hp_container.get_child(1)
 		hp_bar.max_value = enemy.stats.max_hp
-		hp_bar.value = enemy.stats.current_hp
+		_animate_hp_bar(hp_bar, enemy.stats.current_hp)
 		var ep = float(enemy.stats.current_hp) / enemy.stats.max_hp
 		var ef: StyleBoxFlat = hp_bar.get_theme_stylebox("fill")
 		if ep > 0.5:
@@ -969,9 +1037,13 @@ func _update_enemy_panel(enemy: EnemyCombatState) -> void:
 	status_lbl.visible = status_lbl.text != ""
 
 	if enemy.current_intent:
-		var txt = enemy.current_intent.move_name
+		var icon := ""
+		var intent_color := Color(0.95, 0.85, 0.5)
+		var value_str := ""
 		match enemy.current_intent.intent_type:
 			EnemyMove.IntentType.ATTACK:
+				icon = "⚔"
+				intent_color = Color(1.0, 0.4, 0.3)
 				for effect in enemy.current_intent.effects:
 					if effect is DamageEffect:
 						var modified = effect.value
@@ -980,25 +1052,37 @@ func _update_enemy_panel(enemy: EnemyCombatState) -> void:
 							modified = int(modified * 0.75)
 						modified = maxi(0, modified)
 						if modified != effect.value:
-							txt += " %d [%d]" % [effect.value, modified]
+							value_str = " %d [%d]" % [effect.value, modified]
 						else:
-							txt += " (%d)" % effect.value
+							value_str = " %d" % effect.value
 						break
 			EnemyMove.IntentType.DEFEND:
+				icon = "◆"
+				intent_color = Color(0.3, 0.7, 1.0)
 				for effect in enemy.current_intent.effects:
 					if effect is BlockEffect:
 						var modified = effect.value + enemy.stats.get_status_stacks(StatusEffects.DEXTERITY)
 						if modified != effect.value:
-							txt += " %d [%d]" % [effect.value, modified]
+							value_str = " %d [%d]" % [effect.value, modified]
 						else:
-							txt += " (%d)" % effect.value
+							value_str = " %d" % effect.value
 						break
 			EnemyMove.IntentType.DEBUFF:
+				icon = "☠"
+				intent_color = Color(0.8, 0.3, 0.8)
 				for effect in enemy.current_intent.effects:
 					if effect is StatusApplyEffect:
-						txt += " (%s)" % effect.status_effect.effect_name
+						value_str = " %s" % effect.status_effect.effect_name
 						break
-		intent_lbl.text = "Intent: " + txt
+			EnemyMove.IntentType.BUFF:
+				icon = "★"
+				intent_color = Color(0.3, 0.9, 0.4)
+				for effect in enemy.current_intent.effects:
+					if effect is StatusApplyEffect:
+						value_str = " %s" % effect.status_effect.effect_name
+						break
+		intent_lbl.add_theme_color_override("font_color", intent_color)
+		intent_lbl.text = "%s %s%s" % [icon, enemy.current_intent.move_name, value_str]
 	else:
 		intent_lbl.text = ""
 
@@ -1017,7 +1101,7 @@ func _refresh_ui() -> void:
 	hp_label.text = "HP: %d / %d" % [combat_engine.player_stats.current_hp,
 		combat_engine.player_stats.max_hp]
 	player_hp_bar.max_value = combat_engine.player_stats.max_hp
-	player_hp_bar.value = combat_engine.player_stats.current_hp
+	_animate_hp_bar(player_hp_bar, combat_engine.player_stats.current_hp)
 	# Color HP bar based on percentage
 	var hp_pct = float(combat_engine.player_stats.current_hp) / combat_engine.player_stats.max_hp
 	var fill: StyleBoxFlat = player_hp_bar.get_theme_stylebox("fill")
@@ -1057,15 +1141,26 @@ func _refresh_ui() -> void:
 	discard_label.text = "Discard: %d" % combat_engine.piles.discard_pile.size()
 	exhaust_label.text = "Exhaust: %d" % combat_engine.piles.exhaust_pile.size()
 
-	# Hand
+	# Hand — fan cards in an arc
 	for child in hand_container.get_children():
 		child.queue_free()
 	card_nodes.clear()
 
-	for card in combat_engine.piles.hand:
+	var hand = combat_engine.piles.hand
+	var card_count = hand.size()
+	for i in card_count:
+		var card = hand[i]
 		var panel = _create_card_panel(card)
 		hand_container.add_child(panel)
 		card_nodes[card] = panel
+		# Fan rotation: spread cards in an arc
+		if card_count > 1:
+			var max_angle := 3.0 * minf(card_count, 7)  # degrees total spread
+			var angle = lerp(-max_angle, max_angle, float(i) / (card_count - 1))
+			panel.rotation_degrees = angle
+			# Vertical arc offset (middle cards higher)
+			var t_norm = float(i) / (card_count - 1) - 0.5  # -0.5 to 0.5
+			panel.position.y = abs(t_norm) * 20.0  # edges lower
 
 	# Enemies
 	for enemy in combat_engine.enemies:
@@ -1281,6 +1376,7 @@ func _on_combat_won() -> void:
 	_log("\n[color=gold]========== VICTORY! ==========[/color]")
 	AudioManager.play_sfx("gold_gain")
 	end_turn_btn.disabled = true
+	_spawn_victory_particles()
 	# Sync HP back to RunManager
 	RunManager.current_hp = combat_engine.player_stats.current_hp
 	# Process end-of-combat relics
@@ -1336,3 +1432,190 @@ func _on_continue_pressed() -> void:
 
 func _on_game_over_pressed() -> void:
 	SceneTransition.change_scene("res://scenes/game_over/game_over_scene.tscn")
+
+
+# ============================================================
+# ANIMATED HP BARS
+# ============================================================
+
+func _animate_hp_bar(bar: ProgressBar, new_value: float) -> void:
+	var old_value = bar.value
+	bar.value = new_value
+	# Animate trail bar with delay
+	var trail: ProgressBar = _hp_trail_bars.get(bar)
+	if trail:
+		trail.max_value = bar.max_value
+		if new_value < old_value:
+			# Damage: trail lags behind
+			var t = create_tween()
+			t.tween_property(trail, "value", new_value, 0.6).set_delay(0.3).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		else:
+			# Heal: trail catches up instantly
+			trail.value = new_value
+
+
+# ============================================================
+# CARD HOVER DETAIL POPUP
+# ============================================================
+
+func _show_card_hover(card: CardData, source_panel: PanelContainer) -> void:
+	_hide_card_hover()
+	_hover_popup = PanelContainer.new()
+	_hover_popup.custom_minimum_size = Vector2(260, 340)
+	_hover_popup.z_index = 50
+	_hover_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var style = StyleBoxFlat.new()
+	style.set_corner_radius_all(10)
+	style.set_border_width_all(3)
+	style.content_margin_left = 16
+	style.content_margin_right = 16
+	style.content_margin_top = 14
+	style.content_margin_bottom = 14
+	match card.card_type:
+		CardData.CardType.ATTACK:
+			style.bg_color = Color(0.2, 0.08, 0.08, 0.97)
+			style.border_color = Color(0.9, 0.35, 0.3)
+		CardData.CardType.SKILL:
+			style.bg_color = Color(0.08, 0.1, 0.2, 0.97)
+			style.border_color = Color(0.3, 0.55, 0.9)
+		CardData.CardType.POWER:
+			style.bg_color = Color(0.2, 0.18, 0.06, 0.97)
+			style.border_color = Color(0.9, 0.8, 0.25)
+	_hover_popup.add_theme_stylebox_override("panel", style)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	_hover_popup.add_child(vbox)
+
+	# Cost circle
+	var cost_lbl = Label.new()
+	cost_lbl.text = str(card.energy_cost) + " Energy"
+	cost_lbl.add_theme_font_size_override("font_size", 20)
+	cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(cost_lbl)
+
+	# Name
+	var name_lbl = Label.new()
+	name_lbl.text = card.card_name
+	name_lbl.add_theme_font_size_override("font_size", 26)
+	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(name_lbl)
+
+	# Type + Rarity
+	var type_names = ["Attack", "Skill", "Power"]
+	var rarity_names = ["Starter", "Common", "Uncommon", "Rare"]
+	var rarity_colors = [Color(0.5, 0.5, 0.5), Color(0.55, 0.55, 0.55), Color(0.3, 0.7, 0.9), Color(0.95, 0.8, 0.2)]
+	var tr_lbl = Label.new()
+	tr_lbl.text = "%s - %s" % [type_names[card.card_type], rarity_names[card.rarity]]
+	tr_lbl.add_theme_font_size_override("font_size", 15)
+	tr_lbl.add_theme_color_override("font_color", rarity_colors[card.rarity])
+	tr_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(tr_lbl)
+
+	# Personality
+	if card.personality != CardData.PersonalityType.NEUTRAL:
+		var pers_lbl = Label.new()
+		pers_lbl.text = _get_personality_label(card.personality)
+		pers_lbl.add_theme_font_size_override("font_size", 14)
+		pers_lbl.add_theme_color_override("font_color", _get_personality_color(card.personality))
+		pers_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(pers_lbl)
+
+	# Art area
+	var art = PanelContainer.new()
+	art.custom_minimum_size = Vector2(0, 60)
+	var art_s = StyleBoxFlat.new()
+	art_s.set_corner_radius_all(6)
+	art_s.content_margin_top = 8
+	art_s.content_margin_bottom = 8
+	match card.card_type:
+		CardData.CardType.ATTACK:
+			art_s.bg_color = Color(0.35, 0.12, 0.1)
+		CardData.CardType.SKILL:
+			art_s.bg_color = Color(0.1, 0.16, 0.3)
+		CardData.CardType.POWER:
+			art_s.bg_color = Color(0.3, 0.26, 0.1)
+	art.add_theme_stylebox_override("panel", art_s)
+	var art_icon = Label.new()
+	match card.card_type:
+		CardData.CardType.ATTACK: art_icon.text = "⚔"
+		CardData.CardType.SKILL: art_icon.text = "◆"
+		CardData.CardType.POWER: art_icon.text = "★"
+	art_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	art_icon.add_theme_font_size_override("font_size", 32)
+	art_icon.add_theme_color_override("font_color", style.border_color.lightened(0.3))
+	art.add_child(art_icon)
+	vbox.add_child(art)
+
+	# Description
+	var desc = Label.new()
+	if combat_engine and combat_engine.player_stats:
+		desc.text = card.get_modified_description(combat_engine.player_stats)
+	else:
+		desc.text = card.get_generated_description()
+	desc.add_theme_font_size_override("font_size", 18)
+	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+	vbox.add_child(desc)
+
+	# Exhaust tag
+	if card.exhaust:
+		var ex = Label.new()
+		ex.text = "Exhaust"
+		ex.add_theme_font_size_override("font_size", 14)
+		ex.add_theme_color_override("font_color", Color(0.7, 0.4, 0.4))
+		ex.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(ex)
+
+	# Target type
+	var target_lbl = Label.new()
+	match card.target_type:
+		CardData.TargetType.SINGLE_ENEMY: target_lbl.text = "Target: Single Enemy"
+		CardData.TargetType.ALL_ENEMIES: target_lbl.text = "Target: All Enemies"
+		CardData.TargetType.SELF: target_lbl.text = "Target: Self"
+		_: target_lbl.text = ""
+	if target_lbl.text:
+		target_lbl.add_theme_font_size_override("font_size", 13)
+		target_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		target_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(target_lbl)
+
+	_ignore_mouse_recursive(_hover_popup)
+
+	# Position above the source card
+	add_child(_hover_popup)
+	await get_tree().process_frame
+	var pos = source_panel.global_position
+	_hover_popup.global_position = Vector2(
+		clampf(pos.x - 50, 10, 1920 - _hover_popup.size.x - 10),
+		maxf(10, pos.y - _hover_popup.size.y - 10)
+	)
+
+
+func _hide_card_hover() -> void:
+	if _hover_popup:
+		_hover_popup.queue_free()
+		_hover_popup = null
+
+
+# ============================================================
+# VICTORY PARTICLES
+# ============================================================
+
+func _spawn_victory_particles() -> void:
+	for i in 30:
+		var p = ColorRect.new()
+		p.custom_minimum_size = Vector2(4, 4)
+		p.size = Vector2(4, 4)
+		var brightness = randf_range(0.7, 1.0)
+		p.color = Color(brightness, brightness * 0.85, brightness * 0.3, randf_range(0.3, 0.8))
+		p.position = Vector2(randf_range(200, 1720), randf_range(400, 700))
+		p.z_index = 25
+		add_child(p)
+		var t = create_tween().set_parallel(true)
+		t.tween_property(p, "position:y", p.position.y - randf_range(200, 500), randf_range(1.0, 2.5)).set_ease(Tween.EASE_OUT)
+		t.tween_property(p, "position:x", p.position.x + randf_range(-100, 100), randf_range(1.0, 2.5))
+		t.tween_property(p, "modulate:a", 0.0, 1.5).set_delay(0.8)
+		t.chain().tween_callback(p.queue_free)
