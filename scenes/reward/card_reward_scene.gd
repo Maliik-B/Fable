@@ -22,9 +22,27 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.1, 0.08, 0.12)
+	bg.color = Color(0.06, 0.04, 0.08)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Vignette
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.4;
+	float vig = smoothstep(0.3, 1.0, dist);
+	COLOR = vec4(0.0, 0.0, 0.0, vig * 0.5);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	var margin = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -39,13 +57,20 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 24)
 	margin.add_child(vbox)
 
-	# Header
+	# Header with entrance animation
 	var title = Label.new()
 	title.text = "Victory!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 42)
+	title.add_theme_font_size_override("font_size", 48)
 	title.add_theme_color_override("font_color", Color(0.95, 0.85, 0.3))
+	title.modulate.a = 0.0
+	title.scale = Vector2(0.5, 0.5)
+	title.pivot_offset = Vector2(960, 24)
 	vbox.add_child(title)
+
+	var title_tween = create_tween().set_parallel(true)
+	title_tween.tween_property(title, "modulate:a", 1.0, 0.5)
+	title_tween.tween_property(title, "scale", Vector2.ONE, 0.5).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 	# Gold reward
 	if gold_earned > 0:
@@ -72,10 +97,17 @@ func _build_ui() -> void:
 	card_row.add_theme_constant_override("separation", 40)
 	vbox.add_child(card_row)
 
+	var delay := 0.0
 	for card in card_choices:
 		var panel = _create_card_panel(card)
+		panel.modulate.a = 0.0
+		panel.position.y = 40
 		card_row.add_child(panel)
 		card_panels[card] = panel
+		var t = create_tween().set_parallel(true)
+		t.tween_property(panel, "modulate:a", 1.0, 0.4).set_delay(delay + 0.2)
+		t.tween_property(panel, "position:y", 0, 0.4).set_delay(delay + 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		delay += 0.15
 
 	# Skip button
 	var skip_btn = Button.new()
@@ -143,12 +175,26 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	vbox.add_theme_constant_override("separation", 6)
 	panel.add_child(vbox)
 
-	# Energy cost
+	# Energy cost in circle ornament
+	var cost_container = PanelContainer.new()
+	cost_container.custom_minimum_size = Vector2(44, 44)
+	var cost_style = StyleBoxFlat.new()
+	cost_style.set_corner_radius_all(22)
+	cost_style.bg_color = Color(0.15, 0.12, 0.08)
+	cost_style.set_border_width_all(2)
+	cost_style.border_color = Color(0.85, 0.75, 0.3)
+	cost_style.content_margin_left = 6
+	cost_style.content_margin_right = 6
+	cost_style.content_margin_top = 4
+	cost_style.content_margin_bottom = 4
+	cost_container.add_theme_stylebox_override("panel", cost_style)
 	var cost_lbl = Label.new()
 	cost_lbl.text = str(card.energy_cost)
-	cost_lbl.add_theme_font_size_override("font_size", 28)
+	cost_lbl.add_theme_font_size_override("font_size", 26)
 	cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
-	vbox.add_child(cost_lbl)
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_container.add_child(cost_lbl)
+	vbox.add_child(cost_container)
 
 	# Card name
 	var name_lbl = Label.new()
@@ -182,6 +228,38 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 		pers_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(pers_lbl)
 
+	# Card art area
+	var art_frame = PanelContainer.new()
+	art_frame.custom_minimum_size = Vector2(0, 55)
+	var art_style = StyleBoxFlat.new()
+	art_style.set_corner_radius_all(4)
+	art_style.content_margin_top = 6
+	art_style.content_margin_bottom = 6
+	match card.card_type:
+		CardData.CardType.ATTACK:
+			art_style.bg_color = Color(0.35, 0.12, 0.1)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.6, 0.2, 0.15, 0.5)
+		CardData.CardType.SKILL:
+			art_style.bg_color = Color(0.1, 0.16, 0.3)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.2, 0.3, 0.55, 0.5)
+		CardData.CardType.POWER:
+			art_style.bg_color = Color(0.3, 0.26, 0.1)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.55, 0.45, 0.15, 0.5)
+	art_frame.add_theme_stylebox_override("panel", art_style)
+	var art_icon = Label.new()
+	match card.card_type:
+		CardData.CardType.ATTACK: art_icon.text = "⚔"
+		CardData.CardType.SKILL: art_icon.text = "◆"
+		CardData.CardType.POWER: art_icon.text = "★"
+	art_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	art_icon.add_theme_font_size_override("font_size", 28)
+	art_icon.add_theme_color_override("font_color", style.border_color.lightened(0.3))
+	art_frame.add_child(art_icon)
+	vbox.add_child(art_frame)
+
 	# Spacer
 	var spacer = Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -211,6 +289,17 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	panel.gui_input.connect(_on_card_input.bind(card))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	panel.pivot_offset = Vector2(110, 150)
+
+	# Hover animation
+	panel.mouse_entered.connect(func():
+		var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		t.tween_property(panel, "scale", Vector2(1.06, 1.06), 0.12)
+	)
+	panel.mouse_exited.connect(func():
+		var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		t.tween_property(panel, "scale", Vector2.ONE, 0.12)
+	)
 
 	return panel
 
@@ -259,6 +348,6 @@ func _get_personality_color(pers: CardData.PersonalityType) -> Color:
 
 func _return_to_map() -> void:
 	if RunManager.pending_act_complete:
-		get_tree().change_scene_to_file("res://scenes/act/act_transition_scene.tscn")
+		SceneTransition.change_scene("res://scenes/act/act_transition_scene.tscn")
 	else:
-		get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+		SceneTransition.change_scene("res://scenes/map/map_scene.tscn")

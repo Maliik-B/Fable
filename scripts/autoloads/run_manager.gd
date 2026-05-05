@@ -20,12 +20,15 @@ var pending_relic_reward: bool = false
 var pending_relic_is_boss: bool = false
 var pending_act_complete: bool = false
 var run_start_time: int = 0 # msec from Time.get_ticks_msec()
+var run_stats: Dictionary = {}
 
 const MAX_ACTS := 3
 
 
 func add_gold(amount: int) -> void:
 	gold += amount
+	if run_active and amount > 0:
+		run_stats["gold_earned"] = run_stats.get("gold_earned", 0) + amount
 
 
 func start_run(character: CharacterData, seed_value: int = -1) -> void:
@@ -45,6 +48,14 @@ func start_run(character: CharacterData, seed_value: int = -1) -> void:
 	pending_relic_is_boss = false
 	pending_act_complete = false
 	run_start_time = Time.get_ticks_msec()
+	run_stats = {
+		"cards_played": 0,
+		"damage_dealt": 0,
+		"damage_taken": 0,
+		"enemies_killed": 0,
+		"gold_earned": 0,
+		"floors_cleared": 0,
+	}
 
 	# Build starting deck (deep copy so upgrades don't modify templates)
 	current_deck.clear()

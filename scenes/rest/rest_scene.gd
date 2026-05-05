@@ -18,9 +18,27 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.08, 0.1, 0.08)
+	bg.color = Color(0.05, 0.07, 0.05)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Warm vignette for rest
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.4;
+	float vig = smoothstep(0.3, 1.0, dist);
+	COLOR = vec4(0.0, 0.02, 0.0, vig * 0.5);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	var margin = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -309,7 +327,7 @@ func _show_done() -> void:
 
 
 func _on_leave() -> void:
-	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+	SceneTransition.change_scene("res://scenes/map/map_scene.tscn")
 
 
 func _ignore_mouse_recursive(control: Control) -> void:

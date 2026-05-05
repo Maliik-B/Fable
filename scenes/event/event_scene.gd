@@ -23,9 +23,27 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.08, 0.06, 0.1)
+	bg.color = Color(0.05, 0.03, 0.07)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Moody vignette for events
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.5;
+	float vig = smoothstep(0.2, 1.0, dist);
+	COLOR = vec4(0.02, 0.0, 0.04, vig * 0.6);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	var margin = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -480,12 +498,11 @@ func _show_game_over() -> void:
 
 func _on_game_over() -> void:
 	RunManager.end_run(false)
-	RunManager.run_active = false
-	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+	SceneTransition.change_scene("res://scenes/game_over/game_over_scene.tscn")
 
 
 func _on_leave() -> void:
-	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+	SceneTransition.change_scene("res://scenes/map/map_scene.tscn")
 
 
 func _ignore_mouse_recursive(control: Control) -> void:

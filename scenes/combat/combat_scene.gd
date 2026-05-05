@@ -19,18 +19,21 @@ var log_text: RichTextLabel
 var pile_popup: PanelContainer
 
 # -- Interaction state --
+var player_hp_bar: ProgressBar
 var selected_card: CardData = null
 var card_nodes: Dictionary = {} # CardData -> PanelContainer
 var enemy_nodes: Dictionary = {} # EnemyCombatState -> PanelContainer
 
 
 var continue_btn: Button
+var _main_container: MarginContainer
 
 
 func _ready() -> void:
 	_build_ui()
 	_connect_events()
 	_start_combat()
+
 
 
 # ============================================================
@@ -40,9 +43,27 @@ func _ready() -> void:
 func _build_ui() -> void:
 	# Background
 	var bg = ColorRect.new()
-	bg.color = Color(0.12, 0.1, 0.14)
+	bg.color = Color(0.08, 0.06, 0.1)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Vignette
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.3;
+	float vig = smoothstep(0.35, 1.0, dist);
+	COLOR = vec4(0.0, 0.0, 0.0, vig * 0.6);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	# Main layout with margins
 	var margin = MarginContainer.new()
@@ -52,6 +73,7 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_top", 20)
 	margin.add_theme_constant_override("margin_bottom", 20)
 	add_child(margin)
+	_main_container = margin
 
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 12)
@@ -141,8 +163,16 @@ func _build_player_bar() -> PanelContainer:
 	bar.add_theme_constant_override("separation", 40)
 	panel.add_child(bar)
 
+	# HP with bar
+	var hp_section = VBoxContainer.new()
+	hp_section.add_theme_constant_override("separation", 2)
+	bar.add_child(hp_section)
+
 	hp_label = _make_stat_label(Color(0.9, 0.3, 0.3))
-	bar.add_child(hp_label)
+	hp_section.add_child(hp_label)
+
+	player_hp_bar = _make_hp_bar(180, 8)
+	hp_section.add_child(player_hp_bar)
 
 	block_label = _make_stat_label(Color(0.3, 0.6, 0.9))
 	bar.add_child(block_label)
@@ -172,12 +202,64 @@ func _build_bottom_area() -> HBoxContainer:
 
 	end_turn_btn = Button.new()
 	end_turn_btn.text = "End Turn"
-	end_turn_btn.custom_minimum_size = Vector2(130, 55)
-	end_turn_btn.add_theme_font_size_override("font_size", 18)
+	end_turn_btn.custom_minimum_size = Vector2(140, 60)
+	end_turn_btn.add_theme_font_size_override("font_size", 20)
+	end_turn_btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+	var et_style = StyleBoxFlat.new()
+	et_style.set_corner_radius_all(10)
+	et_style.set_border_width_all(2)
+	et_style.bg_color = Color(0.2, 0.15, 0.1)
+	et_style.border_color = Color(0.7, 0.55, 0.25)
+	et_style.content_margin_left = 12
+	et_style.content_margin_right = 12
+	et_style.content_margin_top = 8
+	et_style.content_margin_bottom = 8
+	end_turn_btn.add_theme_stylebox_override("normal", et_style)
+
+	var et_hover = et_style.duplicate()
+	et_hover.bg_color = Color(0.3, 0.22, 0.12)
+	et_hover.border_color = Color(0.9, 0.7, 0.3)
+	end_turn_btn.add_theme_stylebox_override("hover", et_hover)
+
+	var et_pressed = et_style.duplicate()
+	et_pressed.bg_color = Color(0.12, 0.1, 0.06)
+	end_turn_btn.add_theme_stylebox_override("pressed", et_pressed)
+
+	var et_disabled = et_style.duplicate()
+	et_disabled.bg_color = Color(0.12, 0.12, 0.12)
+	et_disabled.border_color = Color(0.3, 0.3, 0.3)
+	end_turn_btn.add_theme_stylebox_override("disabled", et_disabled)
+	end_turn_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+	end_turn_btn.add_theme_color_override("font_color", Color(0.9, 0.75, 0.35))
+	end_turn_btn.add_theme_color_override("font_hover_color", Color(1.0, 0.9, 0.5))
+	end_turn_btn.add_theme_color_override("font_disabled_color", Color(0.4, 0.4, 0.4))
+
 	end_turn_btn.pressed.connect(_on_end_turn_pressed)
 	bottom.add_child(end_turn_btn)
 
 	return bottom
+
+
+func _make_hp_bar(width: int, height: int) -> ProgressBar:
+	var bar = ProgressBar.new()
+	bar.custom_minimum_size = Vector2(width, height)
+	bar.show_percentage = false
+	bar.max_value = 100
+	bar.value = 100
+
+	var bg_style = StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.15, 0.08, 0.08)
+	bg_style.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("background", bg_style)
+
+	var fill_style = StyleBoxFlat.new()
+	fill_style.bg_color = Color(0.8, 0.2, 0.15)
+	fill_style.set_corner_radius_all(3)
+	bar.add_theme_stylebox_override("fill", fill_style)
+
+	return bar
 
 
 func _make_stat_label(color: Color) -> Label:
@@ -264,31 +346,47 @@ func _show_pile_popup(title: String, cards: Array) -> void:
 		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 		list.add_child(empty)
 	else:
+		var grid = GridContainer.new()
+		grid.columns = 4
+		grid.add_theme_constant_override("h_separation", 8)
+		grid.add_theme_constant_override("v_separation", 8)
+		list.add_child(grid)
 		for card in cards:
-			var row = HBoxContainer.new()
-			row.add_theme_constant_override("separation", 12)
-			list.add_child(row)
-
-			var cost_lbl = Label.new()
-			cost_lbl.text = "[%d]" % card.energy_cost
-			cost_lbl.add_theme_font_size_override("font_size", 16)
-			cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
-			cost_lbl.custom_minimum_size.x = 30
-			row.add_child(cost_lbl)
-
-			var name_lbl = Label.new()
-			name_lbl.text = card.card_name
-			name_lbl.add_theme_font_size_override("font_size", 16)
-			var type_colors = [Color(0.9, 0.5, 0.5), Color(0.5, 0.7, 0.9), Color(0.9, 0.8, 0.3)]
-			name_lbl.add_theme_color_override("font_color", type_colors[card.card_type])
-			name_lbl.custom_minimum_size.x = 140
-			row.add_child(name_lbl)
-
-			var desc_lbl = Label.new()
-			desc_lbl.text = card.get_generated_description()
-			desc_lbl.add_theme_font_size_override("font_size", 14)
-			desc_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
-			row.add_child(desc_lbl)
+			var cpanel = PanelContainer.new()
+			cpanel.custom_minimum_size = Vector2(160, 100)
+			var cs = StyleBoxFlat.new()
+			cs.set_corner_radius_all(6)
+			cs.set_border_width_all(2)
+			cs.content_margin_left = 6
+			cs.content_margin_right = 6
+			cs.content_margin_top = 4
+			cs.content_margin_bottom = 4
+			match card.card_type:
+				CardData.CardType.ATTACK:
+					cs.bg_color = Color(0.22, 0.1, 0.1)
+					cs.border_color = Color(0.7, 0.25, 0.25)
+				CardData.CardType.SKILL:
+					cs.bg_color = Color(0.1, 0.12, 0.22)
+					cs.border_color = Color(0.25, 0.4, 0.7)
+				CardData.CardType.POWER:
+					cs.bg_color = Color(0.22, 0.2, 0.1)
+					cs.border_color = Color(0.7, 0.6, 0.2)
+			cpanel.add_theme_stylebox_override("panel", cs)
+			var cvb = VBoxContainer.new()
+			cvb.add_theme_constant_override("separation", 2)
+			cpanel.add_child(cvb)
+			var cn = Label.new()
+			cn.text = "[%d] %s" % [card.energy_cost, card.card_name]
+			cn.add_theme_font_size_override("font_size", 14)
+			cn.add_theme_color_override("font_color", cs.border_color.lightened(0.4))
+			cvb.add_child(cn)
+			var cd = Label.new()
+			cd.text = card.get_generated_description()
+			cd.add_theme_font_size_override("font_size", 11)
+			cd.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
+			cd.autowrap_mode = TextServer.AUTOWRAP_WORD
+			cvb.add_child(cd)
+			grid.add_child(cpanel)
 
 	add_child(pile_popup)
 
@@ -545,12 +643,26 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	var vbox = VBoxContainer.new()
 	panel.add_child(vbox)
 
-	# Energy cost
+	# Energy cost in circle ornament
+	var cost_container = PanelContainer.new()
+	cost_container.custom_minimum_size = Vector2(36, 36)
+	var cost_style = StyleBoxFlat.new()
+	cost_style.set_corner_radius_all(18)
+	cost_style.bg_color = Color(0.15, 0.12, 0.08)
+	cost_style.set_border_width_all(2)
+	cost_style.border_color = Color(0.85, 0.75, 0.3)
+	cost_style.content_margin_left = 4
+	cost_style.content_margin_right = 4
+	cost_style.content_margin_top = 2
+	cost_style.content_margin_bottom = 2
+	cost_container.add_theme_stylebox_override("panel", cost_style)
 	var cost_lbl = Label.new()
 	cost_lbl.text = str(card.energy_cost)
-	cost_lbl.add_theme_font_size_override("font_size", 24)
+	cost_lbl.add_theme_font_size_override("font_size", 22)
 	cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
-	vbox.add_child(cost_lbl)
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_container.add_child(cost_lbl)
+	vbox.add_child(cost_container)
 
 	# Card name
 	var name_lbl = Label.new()
@@ -582,6 +694,38 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 		pers_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(pers_lbl)
 
+	# Card art area
+	var art_frame = PanelContainer.new()
+	art_frame.custom_minimum_size = Vector2(0, 40)
+	var art_style = StyleBoxFlat.new()
+	art_style.set_corner_radius_all(4)
+	art_style.content_margin_top = 4
+	art_style.content_margin_bottom = 4
+	match card.card_type:
+		CardData.CardType.ATTACK:
+			art_style.bg_color = Color(0.35, 0.12, 0.1)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.6, 0.2, 0.15, 0.5)
+		CardData.CardType.SKILL:
+			art_style.bg_color = Color(0.1, 0.16, 0.3)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.2, 0.3, 0.55, 0.5)
+		CardData.CardType.POWER:
+			art_style.bg_color = Color(0.3, 0.26, 0.1)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.55, 0.45, 0.15, 0.5)
+	art_frame.add_theme_stylebox_override("panel", art_style)
+	var art_icon = Label.new()
+	match card.card_type:
+		CardData.CardType.ATTACK: art_icon.text = "⚔"
+		CardData.CardType.SKILL: art_icon.text = "◆"
+		CardData.CardType.POWER: art_icon.text = "★"
+	art_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	art_icon.add_theme_font_size_override("font_size", 24)
+	art_icon.add_theme_color_override("font_color", style.border_color.lightened(0.3))
+	art_frame.add_child(art_icon)
+	vbox.add_child(art_frame)
+
 	# Spacer
 	var spacer = Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -604,6 +748,19 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	# Click handler
 	panel.gui_input.connect(_on_card_input.bind(card))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	panel.pivot_offset = Vector2(80, 110)
+
+	# Hover animation
+	panel.mouse_entered.connect(func():
+		if panel.modulate != Color(0.5, 0.5, 0.5):
+			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			t.tween_property(panel, "scale", Vector2(1.08, 1.08), 0.12)
+	)
+	panel.mouse_exited.connect(func():
+		var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		t.tween_property(panel, "scale", Vector2.ONE, 0.12)
+	)
 
 	return panel
 
@@ -690,6 +847,34 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(vbox)
 
+	# Enemy portrait area
+	var portrait = PanelContainer.new()
+	portrait.custom_minimum_size = Vector2(0, 70)
+	var port_style = StyleBoxFlat.new()
+	port_style.set_corner_radius_all(6)
+	port_style.content_margin_top = 8
+	port_style.content_margin_bottom = 8
+	var enemy_colors = {
+		"Slime": [Color(0.15, 0.3, 0.12), Color(0.3, 0.6, 0.2), "~"],
+		"Goblin": [Color(0.3, 0.2, 0.1), Color(0.6, 0.4, 0.15), "⚑"],
+		"Orc Brute": [Color(0.3, 0.12, 0.12), Color(0.7, 0.25, 0.2), "♦"],
+		"Realm Guardian": [Color(0.2, 0.2, 0.3), Color(0.5, 0.5, 0.8), "◆"],
+		"Hollow Warden": [Color(0.15, 0.1, 0.2), Color(0.5, 0.3, 0.6), "☽"],
+		"Fable's End": [Color(0.3, 0.08, 0.08), Color(0.8, 0.15, 0.1), "★"],
+	}
+	var ec = enemy_colors.get(enemy.enemy_data.enemy_name, [Color(0.2, 0.18, 0.22), Color(0.5, 0.4, 0.5), "?"])
+	port_style.bg_color = ec[0]
+	port_style.set_border_width_all(1)
+	port_style.border_color = ec[1].darkened(0.3)
+	portrait.add_theme_stylebox_override("panel", port_style)
+	var port_icon = Label.new()
+	port_icon.text = ec[2]
+	port_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	port_icon.add_theme_font_size_override("font_size", 36)
+	port_icon.add_theme_color_override("font_color", ec[1])
+	portrait.add_child(port_icon)
+	vbox.add_child(portrait)
+
 	var name_lbl = Label.new()
 	name_lbl.text = enemy.enemy_data.enemy_name
 	name_lbl.add_theme_font_size_override("font_size", 24)
@@ -702,6 +887,12 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 	hp_lbl.add_theme_color_override("font_color", Color(0.9, 0.3, 0.3))
 	hp_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(hp_lbl)
+
+	var enemy_hp_bar = _make_hp_bar(160, 8)
+	enemy_hp_bar.name = "HPBar"
+	enemy_hp_bar.max_value = enemy.enemy_data.max_health
+	enemy_hp_bar.value = enemy.stats.current_hp
+	vbox.add_child(enemy_hp_bar)
 
 	var block_lbl = Label.new()
 	block_lbl.name = "Block"
@@ -753,6 +944,19 @@ func _update_enemy_panel(enemy: EnemyCombatState) -> void:
 
 	hp_lbl.text = "HP: %d / %d" % [enemy.stats.current_hp, enemy.stats.max_hp]
 
+	var hp_bar: ProgressBar = vbox.get_node_or_null("HPBar")
+	if hp_bar:
+		hp_bar.max_value = enemy.stats.max_hp
+		hp_bar.value = enemy.stats.current_hp
+		var ep = float(enemy.stats.current_hp) / enemy.stats.max_hp
+		var ef: StyleBoxFlat = hp_bar.get_theme_stylebox("fill")
+		if ep > 0.5:
+			ef.bg_color = Color(0.8, 0.2, 0.15)
+		elif ep > 0.25:
+			ef.bg_color = Color(0.9, 0.5, 0.1)
+		else:
+			ef.bg_color = Color(0.5, 0.1, 0.1)
+
 	if enemy.stats.block > 0:
 		block_lbl.text = "Block: %d" % enemy.stats.block
 		block_lbl.visible = true
@@ -761,6 +965,7 @@ func _update_enemy_panel(enemy: EnemyCombatState) -> void:
 		block_lbl.visible = false
 
 	status_lbl.text = _format_statuses(enemy.stats)
+	status_lbl.tooltip_text = _format_status_tooltips(enemy.stats)
 	status_lbl.visible = status_lbl.text != ""
 
 	if enemy.current_intent:
@@ -811,6 +1016,17 @@ func _refresh_ui() -> void:
 	# Player stats
 	hp_label.text = "HP: %d / %d" % [combat_engine.player_stats.current_hp,
 		combat_engine.player_stats.max_hp]
+	player_hp_bar.max_value = combat_engine.player_stats.max_hp
+	player_hp_bar.value = combat_engine.player_stats.current_hp
+	# Color HP bar based on percentage
+	var hp_pct = float(combat_engine.player_stats.current_hp) / combat_engine.player_stats.max_hp
+	var fill: StyleBoxFlat = player_hp_bar.get_theme_stylebox("fill")
+	if hp_pct > 0.5:
+		fill.bg_color = Color(0.2, 0.7, 0.3)
+	elif hp_pct > 0.25:
+		fill.bg_color = Color(0.9, 0.6, 0.1)
+	else:
+		fill.bg_color = Color(0.9, 0.2, 0.15)
 	block_label.text = "Block: %d" % combat_engine.player_stats.block
 	energy_label.text = "Energy: %d / %d" % [combat_engine.energy, CombatEngine.MAX_ENERGY]
 
@@ -834,6 +1050,7 @@ func _refresh_ui() -> void:
 		passion_label.text = "Passion: --"
 
 	player_status_label.text = _format_statuses(combat_engine.player_stats)
+	player_status_label.tooltip_text = _format_status_tooltips(combat_engine.player_stats)
 
 	# Piles
 	draw_label.text = "Draw: %d" % combat_engine.piles.draw_pile.size()
@@ -874,6 +1091,15 @@ func _format_statuses(stats: CombatantStats) -> String:
 	return "  ".join(parts)
 
 
+func _format_status_tooltips(stats: CombatantStats) -> String:
+	var lines: PackedStringArray = []
+	for effect in stats.statuses:
+		var stacks = stats.statuses[effect]
+		if stacks > 0:
+			lines.append("%s (%d): %s" % [effect.effect_name, stacks, effect.description])
+	return "\n".join(lines) if lines.size() > 0 else ""
+
+
 func _log(msg: String) -> void:
 	log_text.append_text(msg + "\n")
 
@@ -900,6 +1126,7 @@ func _on_combat_started() -> void:
 
 func _on_card_played(card: CardData, _target) -> void:
 	_log("Played [color=white]%s[/color]." % card.card_name)
+	RunManager.run_stats["cards_played"] = RunManager.run_stats.get("cards_played", 0) + 1
 	_refresh_ui()
 
 
@@ -910,11 +1137,13 @@ func _on_card_exhausted(card: CardData) -> void:
 func _on_player_turn_started() -> void:
 	_log("[color=cyan]--- Your Turn %d ---[/color]" % combat_engine.turn_number)
 	_log_relic_activations(RelicData.RelicTrigger.ON_TURN_START)
+	_show_turn_banner("Your Turn", Color(0.3, 0.8, 0.9))
 	_refresh_ui()
 
 
 func _on_enemy_turn_started() -> void:
 	_log("[color=orange]--- Enemy Turn ---[/color]")
+	_show_turn_banner("Enemy Turn", Color(0.9, 0.4, 0.3))
 	for enemy in combat_engine.enemies:
 		if not enemy.stats.is_dead() and enemy.current_intent:
 			_log("%s uses [color=white]%s[/color]!" % [
@@ -924,28 +1153,37 @@ func _on_enemy_turn_started() -> void:
 
 func _on_player_damaged(amount: int, new_hp: int) -> void:
 	_log("[color=red]You take %d damage! (HP: %d)[/color]" % [amount, new_hp])
+	RunManager.run_stats["damage_taken"] = RunManager.run_stats.get("damage_taken", 0) + amount
+	_screen_shake(10.0, 0.25)
 	_refresh_ui()
 
 
 func _on_enemy_damaged(enemy, amount: int, new_hp: int) -> void:
 	_log("%s takes [color=yellow]%d damage[/color]. (HP: %d)" % [
 		enemy.enemy_data.enemy_name, amount, new_hp])
+	RunManager.run_stats["damage_dealt"] = RunManager.run_stats.get("damage_dealt", 0) + amount
+	var panel = enemy_nodes.get(enemy)
+	_spawn_damage_number("-%d" % amount, Color(1.0, 0.3, 0.2), panel)
 	_refresh_ui()
 
 
 func _on_enemy_died(enemy) -> void:
 	_log("[color=green]%s defeated![/color]" % enemy.enemy_data.enemy_name)
+	RunManager.run_stats["enemies_killed"] = RunManager.run_stats.get("enemies_killed", 0) + 1
 	_refresh_ui()
 
 
 func _on_block_gained(target, amount: int) -> void:
 	if target == combat_engine.player_stats:
 		_log("Gained [color=cyan]%d Block[/color]." % amount)
+		_spawn_damage_number("+%d" % amount, Color(0.3, 0.7, 1.0), null)
 	else:
 		for enemy in combat_engine.enemies:
 			if enemy.stats == target:
 				_log("%s gains [color=cyan]%d Block[/color]." % [
 					enemy.enemy_data.enemy_name, amount])
+				var panel = enemy_nodes.get(enemy)
+				_spawn_damage_number("+%d" % amount, Color(0.3, 0.7, 1.0), panel)
 				break
 	_refresh_ui()
 
@@ -979,6 +1217,64 @@ func _get_combatant_name(stats) -> String:
 		if enemy.stats == stats:
 			return enemy.enemy_data.enemy_name
 	return "???"
+
+
+func _show_turn_banner(text: String, color: Color) -> void:
+	var banner = Label.new()
+	banner.text = text
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.add_theme_font_size_override("font_size", 36)
+	banner.add_theme_color_override("font_color", color)
+	banner.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	banner.add_theme_constant_override("outline_size", 6)
+	banner.set_anchors_preset(Control.PRESET_CENTER)
+	banner.modulate.a = 0.0
+	banner.z_index = 20
+	banner.position.y = -20
+	add_child(banner)
+	var t = create_tween()
+	t.tween_property(banner, "modulate:a", 1.0, 0.15)
+	t.tween_interval(0.6)
+	t.tween_property(banner, "modulate:a", 0.0, 0.3)
+	t.tween_callback(banner.queue_free)
+
+
+func _screen_shake(intensity: float = 8.0, duration: float = 0.2) -> void:
+	if not _main_container:
+		return
+	var base_pos = _main_container.position
+	var tween = create_tween()
+	var steps := 6
+	for i in steps:
+		var offset = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		intensity *= 0.7
+		tween.tween_property(_main_container, "position", base_pos + offset, duration / steps)
+	tween.tween_property(_main_container, "position", base_pos, duration / steps)
+
+
+func _spawn_damage_number(text: String, color: Color, target_panel: Control) -> void:
+	var lbl = Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	lbl.add_theme_constant_override("outline_size", 4)
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.z_index = 10
+
+	if target_panel:
+		var pos = target_panel.global_position + Vector2(target_panel.size.x / 2.0 - 30, 10)
+		lbl.global_position = pos
+	else:
+		lbl.position = Vector2(960, 400)
+
+	add_child(lbl)
+
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(lbl, "position:y", lbl.position.y - 60, 0.8).set_ease(Tween.EASE_OUT)
+	tween.tween_property(lbl, "modulate:a", 0.0, 0.8).set_delay(0.3)
+	tween.chain().tween_callback(lbl.queue_free)
 
 
 func _on_combat_won() -> void:
@@ -1031,14 +1327,12 @@ func _on_continue_pressed() -> void:
 			has_relics = RelicPool.get_reward_choices(RngManager.loot_rng, 3, owned).size() > 0
 		RunManager.pending_relic_reward = false
 		if has_relics:
-			get_tree().change_scene_to_file("res://scenes/reward/relic_reward_scene.tscn")
+			SceneTransition.change_scene("res://scenes/reward/relic_reward_scene.tscn")
 		else:
-			get_tree().change_scene_to_file("res://scenes/reward/card_reward_scene.tscn")
+			SceneTransition.change_scene("res://scenes/reward/card_reward_scene.tscn")
 	else:
-		get_tree().change_scene_to_file("res://scenes/reward/card_reward_scene.tscn")
+		SceneTransition.change_scene("res://scenes/reward/card_reward_scene.tscn")
 
 
 func _on_game_over_pressed() -> void:
-	# For now, restart by going back to map (which will create a new run)
-	RunManager.run_active = false
-	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+	SceneTransition.change_scene("res://scenes/game_over/game_over_scene.tscn")

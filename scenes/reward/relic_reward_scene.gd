@@ -23,9 +23,27 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.1, 0.08, 0.12)
+	bg.color = Color(0.06, 0.04, 0.08)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Vignette
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.4;
+	float vig = smoothstep(0.3, 1.0, dist);
+	COLOR = vec4(0.0, 0.0, 0.0, vig * 0.5);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	var margin = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -149,6 +167,16 @@ func _create_relic_panel(relic: RelicData) -> PanelContainer:
 	)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	panel.pivot_offset = Vector2(120, 90)
+
+	panel.mouse_entered.connect(func():
+		var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		t.tween_property(panel, "scale", Vector2(1.06, 1.06), 0.12)
+	)
+	panel.mouse_exited.connect(func():
+		var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		t.tween_property(panel, "scale", Vector2.ONE, 0.12)
+	)
 
 	return panel
 
@@ -164,7 +192,7 @@ func _on_skip() -> void:
 
 
 func _go_to_card_reward() -> void:
-	get_tree().change_scene_to_file("res://scenes/reward/card_reward_scene.tscn")
+	SceneTransition.change_scene("res://scenes/reward/card_reward_scene.tscn")
 
 
 func _ignore_mouse_recursive(control: Control) -> void:

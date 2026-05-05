@@ -14,13 +14,13 @@ var visited: bool = false
 
 static func type_label(t: NodeType) -> String:
 	match t:
-		NodeType.COMBAT: return "C"
-		NodeType.ELITE: return "E"
-		NodeType.REST: return "R"
+		NodeType.COMBAT: return "⚔"
+		NodeType.ELITE: return "☠"
+		NodeType.REST: return "♨"
 		NodeType.SHOP: return "$"
 		NodeType.EVENT: return "!"
 		NodeType.MYSTERY: return "?"
-		NodeType.BOSS: return "B"
+		NodeType.BOSS: return "★"
 	return "?"
 
 

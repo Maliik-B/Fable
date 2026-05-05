@@ -24,6 +24,8 @@ var popup_overlay: PanelContainer
 
 
 var _timer_accum := 0.0
+var _pulse_time := 0.0
+var _available_nodes: Array = []
 
 func _ready() -> void:
 	if not RunManager.run_active:
@@ -47,6 +49,14 @@ func _process(delta: float) -> void:
 		_timer_accum -= 1.0
 		timer_label.text = RunManager.get_run_time_string()
 
+	# Pulse available nodes
+	_pulse_time += delta
+	for id in _available_nodes:
+		var btn: Button = node_buttons.get(id)
+		if btn:
+			var pulse = 0.85 + sin(_pulse_time * 3.0) * 0.15
+			btn.modulate = Color(pulse + 0.15, pulse + 0.15, pulse + 0.15)
+
 
 # ============================================================
 # UI CONSTRUCTION
@@ -54,9 +64,27 @@ func _process(delta: float) -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.1, 0.08, 0.12)
+	bg.color = Color(0.06, 0.04, 0.08)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Vignette
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.4;
+	float vig = smoothstep(0.3, 1.0, dist);
+	COLOR = vec4(0.0, 0.0, 0.0, vig * 0.5);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -86,6 +114,28 @@ func _build_ui() -> void:
 	info_label.add_theme_font_size_override("font_size", 18)
 	info_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 	vbox.add_child(info_label)
+
+	# Legend
+	var legend = HBoxContainer.new()
+	legend.alignment = BoxContainer.ALIGNMENT_CENTER
+	legend.add_theme_constant_override("separation", 20)
+	vbox.add_child(legend)
+
+	var legend_types = [
+		[MapNode.NodeType.COMBAT, "Combat"],
+		[MapNode.NodeType.ELITE, "Elite"],
+		[MapNode.NodeType.REST, "Rest"],
+		[MapNode.NodeType.SHOP, "Shop"],
+		[MapNode.NodeType.EVENT, "Event"],
+		[MapNode.NodeType.MYSTERY, "Mystery"],
+		[MapNode.NodeType.BOSS, "Boss"],
+	]
+	for entry in legend_types:
+		var lbl = Label.new()
+		lbl.text = "%s %s" % [MapNode.type_label(entry[0]), entry[1]]
+		lbl.add_theme_font_size_override("font_size", 14)
+		lbl.add_theme_color_override("font_color", MapNode.type_color(entry[0]))
+		legend.add_child(lbl)
 
 	# Scroll container for the map
 	scroll_container = ScrollContainer.new()
@@ -264,40 +314,68 @@ func _show_deck_popup() -> void:
 	popup_overlay = _create_popup_panel("Deck (%d cards)" % RunManager.current_deck.size())
 	var content: VBoxContainer = popup_overlay.get_meta("content")
 
-	for card in RunManager.current_deck:
-		var row = HBoxContainer.new()
-		row.add_theme_constant_override("separation", 12)
-		content.add_child(row)
+	# Sort cards by type then name
+	var sorted_deck = RunManager.current_deck.duplicate()
+	sorted_deck.sort_custom(func(a, b):
+		if a.card_type != b.card_type:
+			return a.card_type < b.card_type
+		return a.card_name < b.card_name
+	)
 
-		var cost_lbl = Label.new()
-		cost_lbl.text = "[%d]" % card.energy_cost
-		cost_lbl.add_theme_font_size_override("font_size", 16)
-		cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
-		cost_lbl.custom_minimum_size.x = 30
-		row.add_child(cost_lbl)
+	var grid = GridContainer.new()
+	grid.columns = 5
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	content.add_child(grid)
+
+	for card in sorted_deck:
+		var panel = PanelContainer.new()
+		panel.custom_minimum_size = Vector2(180, 120)
+		var style = StyleBoxFlat.new()
+		style.set_corner_radius_all(6)
+		style.set_border_width_all(2)
+		style.content_margin_left = 8
+		style.content_margin_right = 8
+		style.content_margin_top = 6
+		style.content_margin_bottom = 6
+		match card.card_type:
+			CardData.CardType.ATTACK:
+				style.bg_color = Color(0.22, 0.1, 0.1)
+				style.border_color = Color(0.7, 0.25, 0.25)
+			CardData.CardType.SKILL:
+				style.bg_color = Color(0.1, 0.12, 0.22)
+				style.border_color = Color(0.25, 0.4, 0.7)
+			CardData.CardType.POWER:
+				style.bg_color = Color(0.22, 0.2, 0.1)
+				style.border_color = Color(0.7, 0.6, 0.2)
+		panel.add_theme_stylebox_override("panel", style)
+
+		var vb = VBoxContainer.new()
+		vb.add_theme_constant_override("separation", 2)
+		panel.add_child(vb)
 
 		var name_lbl = Label.new()
-		name_lbl.text = card.card_name
-		name_lbl.add_theme_font_size_override("font_size", 16)
-		var type_colors = [Color(0.9, 0.5, 0.5), Color(0.5, 0.7, 0.9), Color(0.9, 0.8, 0.3)]
-		name_lbl.add_theme_color_override("font_color", type_colors[card.card_type])
-		name_lbl.custom_minimum_size.x = 140
-		row.add_child(name_lbl)
+		name_lbl.text = "[%d] %s" % [card.energy_cost, card.card_name]
+		name_lbl.add_theme_font_size_override("font_size", 15)
+		name_lbl.add_theme_color_override("font_color", style.border_color.lightened(0.4))
+		vb.add_child(name_lbl)
 
+		var type_names = ["Attack", "Skill", "Power"]
 		var rarity_names = ["Starter", "Common", "Uncommon", "Rare"]
-		var rarity_colors = [Color(0.4, 0.4, 0.4), Color(0.5, 0.5, 0.5), Color(0.3, 0.6, 0.8), Color(0.8, 0.7, 0.2)]
-		var rarity_lbl = Label.new()
-		rarity_lbl.text = rarity_names[card.rarity]
-		rarity_lbl.add_theme_font_size_override("font_size", 13)
-		rarity_lbl.add_theme_color_override("font_color", rarity_colors[card.rarity])
-		rarity_lbl.custom_minimum_size.x = 80
-		row.add_child(rarity_lbl)
+		var type_lbl = Label.new()
+		type_lbl.text = "%s - %s" % [type_names[card.card_type], rarity_names[card.rarity]]
+		type_lbl.add_theme_font_size_override("font_size", 11)
+		type_lbl.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+		vb.add_child(type_lbl)
 
 		var desc_lbl = Label.new()
 		desc_lbl.text = card.get_generated_description()
-		desc_lbl.add_theme_font_size_override("font_size", 14)
-		desc_lbl.add_theme_color_override("font_color", Color(0.65, 0.65, 0.65))
-		row.add_child(desc_lbl)
+		desc_lbl.add_theme_font_size_override("font_size", 12)
+		desc_lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+		vb.add_child(desc_lbl)
+
+		grid.add_child(panel)
 
 	add_child(popup_overlay)
 
@@ -429,6 +507,7 @@ func _create_node_button(node: MapNode) -> Button:
 func _update_node_states() -> void:
 	var map = RunManager.current_map
 	var available = map.get_available_next_ids()
+	_available_nodes = available
 
 	for id in node_buttons:
 		var btn: Button = node_buttons[id]
@@ -463,6 +542,7 @@ func _on_node_unhover() -> void:
 
 func _enter_node(node: MapNode) -> void:
 	RunManager.current_map.move_to(node.id)
+	RunManager.run_stats["floors_cleared"] = RunManager.run_stats.get("floors_cleared", 0) + 1
 	_update_node_states()
 
 	match node.node_type:
@@ -474,13 +554,13 @@ func _enter_node(node: MapNode) -> void:
 			RunManager.pending_act_complete = true
 			_start_combat(_boss_encounter(), 50 + node.floor_num * 2, true, true)
 		MapNode.NodeType.REST:
-			get_tree().change_scene_to_file("res://scenes/rest/rest_scene.tscn")
+			SceneTransition.change_scene("res://scenes/rest/rest_scene.tscn")
 		MapNode.NodeType.MYSTERY:
 			_handle_mystery(node)
 		MapNode.NodeType.SHOP:
-			get_tree().change_scene_to_file("res://scenes/shop/shop_scene.tscn")
+			SceneTransition.change_scene("res://scenes/shop/shop_scene.tscn")
 		MapNode.NodeType.EVENT:
-			get_tree().change_scene_to_file("res://scenes/event/event_scene.tscn")
+			SceneTransition.change_scene("res://scenes/event/event_scene.tscn")
 
 
 func _start_combat(enemies: Array[EnemyData], gold_reward: int = 0,
@@ -491,7 +571,7 @@ func _start_combat(enemies: Array[EnemyData], gold_reward: int = 0,
 	RunManager.pending_gold_reward = gold_reward
 	RunManager.pending_relic_reward = relic_reward
 	RunManager.pending_relic_is_boss = is_boss
-	get_tree().change_scene_to_file("res://scenes/combat/combat_scene.tscn")
+	SceneTransition.change_scene("res://scenes/combat/combat_scene.tscn")
 
 
 func _handle_mystery(node: MapNode) -> void:

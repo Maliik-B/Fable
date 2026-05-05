@@ -57,9 +57,27 @@ func _generate_shop() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.1, 0.08, 0.12)
+	bg.color = Color(0.06, 0.05, 0.08)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Vignette
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.4;
+	float vig = smoothstep(0.3, 1.0, dist);
+	COLOR = vec4(0.0, 0.0, 0.02, vig * 0.5);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	var margin = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -273,8 +291,17 @@ func _create_shop_card(card: CardData, price: int) -> PanelContainer:
 
 	panel.gui_input.connect(_on_shop_card_input.bind(card))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.pivot_offset = Vector2(100, 140)
 	if can_afford:
 		panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		panel.mouse_entered.connect(func():
+			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			t.tween_property(panel, "scale", Vector2(1.05, 1.05), 0.12)
+		)
+		panel.mouse_exited.connect(func():
+			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			t.tween_property(panel, "scale", Vector2.ONE, 0.12)
+		)
 
 	return panel
 
@@ -518,7 +545,7 @@ func _on_remove_card(index: int) -> void:
 
 func _on_leave() -> void:
 	AudioManager.play_sfx("button_click")
-	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+	SceneTransition.change_scene("res://scenes/map/map_scene.tscn")
 
 
 func _ignore_mouse_recursive(control: Control) -> void:

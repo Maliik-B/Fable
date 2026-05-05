@@ -16,9 +16,27 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.06, 0.05, 0.08)
+	bg.color = Color(0.04, 0.03, 0.06)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+
+	# Vignette
+	var vignette = ColorRect.new()
+	vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var mat = ShaderMaterial.new()
+	var shader = Shader.new()
+	shader.code = """
+shader_type canvas_item;
+void fragment() {
+	vec2 uv = UV - 0.5;
+	float dist = length(uv) * 1.4;
+	float vig = smoothstep(0.25, 1.0, dist);
+	COLOR = vec4(0.0, 0.0, 0.0, vig * 0.6);
+}
+"""
+	mat.shader = shader
+	vignette.material = mat
+	add_child(vignette)
 
 	var margin = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -71,9 +89,16 @@ func _build_victory(vbox: VBoxContainer) -> void:
 	var title = Label.new()
 	title.text = "Victory!"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 52)
+	title.add_theme_font_size_override("font_size", 58)
 	title.add_theme_color_override("font_color", Color(0.95, 0.85, 0.2))
+	title.modulate.a = 0.0
+	title.scale = Vector2(0.5, 0.5)
+	title.pivot_offset = Vector2(960, 29)
 	vbox.add_child(title)
+
+	var t = create_tween().set_parallel(true)
+	t.tween_property(title, "modulate:a", 1.0, 0.8)
+	t.tween_property(title, "scale", Vector2.ONE, 0.6).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 	var desc = Label.new()
 	desc.text = "You have conquered the realm. Your fable is complete."
@@ -157,10 +182,10 @@ func _add_stat_line(parent: VBoxContainer, label: String, value: String,
 func _on_next_act() -> void:
 	AudioManager.play_sfx("button_click")
 	RunManager.advance_act()
-	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+	SceneTransition.change_scene("res://scenes/map/map_scene.tscn")
 
 
 func _on_new_run() -> void:
 	AudioManager.play_sfx("button_click")
 	RunManager.run_active = false
-	get_tree().change_scene_to_file("res://scenes/map/map_scene.tscn")
+	SceneTransition.change_scene("res://scenes/map/map_scene.tscn")

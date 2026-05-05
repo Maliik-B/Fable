@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Fable"
-run/main_scene="res://scenes/map/map_scene.tscn"
+run/main_scene="res://scenes/title/title_screen.tscn"
 config/features=PackedStringArray("4.4")
 
 [autoload]
@@ -19,6 +19,7 @@ Events="*res://scripts/autoloads/events.gd"
 RngManager="*res://scripts/autoloads/rng_manager.gd"
 RunManager="*res://scripts/autoloads/run_manager.gd"
 AudioManager="*res://scripts/autoloads/audio_manager.gd"
+SceneTransition="*res://scripts/autoloads/scene_transition.gd"
 
 [display]
 
