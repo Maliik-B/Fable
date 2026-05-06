@@ -131,11 +131,11 @@ static func _build_generic_pool() -> Array[CardData]:
 	var pool: Array[CardData] = []
 
 	# -- COMMON ATTACKS --
-	pool.append(_card("Heavy Strike", 2, CardData.CardType.ATTACK,
+	pool.append(_card("Crushing Blow", 2, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, CardData.CardRarity.COMMON,
 		[_damage(12)]))
 
-	pool.append(_card("Twin Strike", 1, CardData.CardType.ATTACK,
+	pool.append(_card("Paired Strikes", 1, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, CardData.CardRarity.COMMON,
 		[_damage(3, 2)]))
 
@@ -148,7 +148,7 @@ static func _build_generic_pool() -> Array[CardData]:
 		[_damage(5)]))
 
 	# -- COMMON SKILLS --
-	pool.append(_card("Iron Wave", 1, CardData.CardType.SKILL,
+	pool.append(_card("Retaliate", 1, CardData.CardType.SKILL,
 		CardData.TargetType.SINGLE_ENEMY, CardData.CardRarity.COMMON,
 		[_damage(5), _block(5)]))
 
@@ -161,7 +161,7 @@ static func _build_generic_pool() -> Array[CardData]:
 		[_block(3), _draw(1)]))
 
 	# -- UNCOMMON ATTACKS --
-	pool.append(_card("Carnage", 2, CardData.CardType.ATTACK,
+	pool.append(_card("Havoc", 2, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, CardData.CardRarity.UNCOMMON,
 		[_damage(18)]))
 
@@ -174,7 +174,7 @@ static func _build_generic_pool() -> Array[CardData]:
 		[_damage(8), _status(StatusEffects.VULNERABLE, 1)]))
 
 	# -- UNCOMMON SKILLS --
-	pool.append(_card("Fortify", 1, CardData.CardType.SKILL,
+	pool.append(_card("Bolster", 1, CardData.CardType.SKILL,
 		CardData.TargetType.SELF, CardData.CardRarity.UNCOMMON,
 		[_block(12)]))
 
@@ -191,7 +191,7 @@ static func _build_generic_pool() -> Array[CardData]:
 		[_status(StatusEffects.WEAK, 2)]))
 
 	# -- RARE ATTACKS --
-	pool.append(_card("Immolate", 2, CardData.CardType.ATTACK,
+	pool.append(_card("Wildfire", 2, CardData.CardType.ATTACK,
 		CardData.TargetType.ALL_ENEMIES, CardData.CardRarity.RARE,
 		[_damage(14)]))
 
@@ -200,11 +200,11 @@ static func _build_generic_pool() -> Array[CardData]:
 		[_damage(8, 3)]))
 
 	# -- RARE SKILLS --
-	pool.append(_card("Adrenaline", 0, CardData.CardType.SKILL,
+	pool.append(_card("Second Wind", 0, CardData.CardType.SKILL,
 		CardData.TargetType.SELF, CardData.CardRarity.RARE,
 		[_energy(2), _draw(2)]))
 
-	pool.append(_card("Apparition", 1, CardData.CardType.SKILL,
+	pool.append(_card("Phantom Guard", 1, CardData.CardType.SKILL,
 		CardData.TargetType.SELF, CardData.CardRarity.RARE,
 		[_block(16), _draw(1)], true))
 

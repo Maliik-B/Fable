@@ -803,7 +803,7 @@ func _make_boss() -> EnemyData:
 		m1.effects.assign([_fx_damage(8)])
 		m1.weight = 2.0
 		var m2 = EnemyMove.new()
-		m2.move_name = "Fortify"
+		m2.move_name = "Bolster"
 		m2.intent_type = EnemyMove.IntentType.DEFEND
 		m2.effects.assign([_fx_block(12), _fx_self_status(StatusEffects.STRENGTH, 1)])
 		m2.weight = 1.0
@@ -913,11 +913,11 @@ func _create_test_character() -> CharacterData:
 		CardData.TargetType.SINGLE_ENEMY, [_fx_damage(6)])
 	var defend = _make_card("Defend", 1, CardData.CardType.SKILL,
 		CardData.TargetType.SELF, [_fx_block(5)])
-	var bash = _make_card("Bash", 2, CardData.CardType.ATTACK,
+	var bash = _make_card("Stagger", 2, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, [_fx_damage(8), _fx_status(StatusEffects.VULNERABLE, 2)])
 	var noxious = _make_card("Noxious Strike", 1, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, [_fx_damage(4), _fx_status(StatusEffects.POISON, 3)])
-	var cleave = _make_card("Cleave", 1, CardData.CardType.ATTACK,
+	var cleave = _make_card("Wide Arc", 1, CardData.CardType.ATTACK,
 		CardData.TargetType.ALL_ENEMIES, [_fx_damage(4)])
 	var flame = _make_card("Flame Strike", 1, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, [_fx_damage(10), _fx_passion(-3)])

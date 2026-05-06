@@ -1,9 +1,49 @@
 extends Control
-## Shop scene. Buy cards, remove a card from your deck, then leave.
+## Shop scene — redesigned with shopkeeper identity, card art, energy ornaments,
+## personality tags, and gold-themed styling.
 
 const CARD_REMOVE_COST := 50
 const CARD_COUNT := 5
 const RELIC_COUNT := 2
+
+# Card icon mapping (shared with combat/reward scenes)
+const _CR = "res://assets/sprites/icons/clockwork_raven/Clockwork raven - Weapons and Potions - Free pack/individual_64x64/"
+const _ITV = "res://assets/sprites/icons/in_the_void/individual/"
+const _CUS = "res://assets/sprites/icons/custom/"
+const CARD_ICONS = {
+	"Strike": _CR + "tile000.png", "Stagger": _CR + "tile025.png",
+	"Noxious Strike": _CUS + "noxious_strike.png", "Wide Arc": _CR + "tile004.png",
+	"Flame Strike": _CUS + "flame_strike.png",
+	"Crushing Blow": _CR + "tile008.png", "Paired Strikes": _CUS + "twin_strike.png",
+	"Sweep": _CR + "tile011.png", "Reckless Swing": _CR + "tile035.png",
+	"Havoc": _CR + "tile041.png", "Poison Fang": _CUS + "poison_fang.png",
+	"Armor Break": _CR + "tile016.png", "Wildfire": _CUS + "immolate.png",
+	"Execute": _CR + "tile012.png",
+	"Soul Flare": _CUS + "soul_flare.png", "Arcane Bolt": _CUS + "arcane_bolt.png",
+	"Blazing Lance": _CR + "tile020.png", "Nether Flames": _CUS + "nether_flames.png",
+	"Cataclysm": _CUS + "cataclysm.png",
+	"Power Slash": _CR + "tile006.png", "Quick Jab": _CR + "tile005.png",
+	"Rampage": _CR + "tile050.png", "Devastating Blow": _CR + "tile030.png",
+	"Defend": _ITV + "shield.png", "Meditate": _CUS + "meditate.png",
+	"Retaliate": _ITV + "gem_blue.png", "Shield Bash": _ITV + "gauntlet.png",
+	"Battle Cry": _CUS + "battle_cry.png", "Bolster": _ITV + "helmet.png",
+	"Dark Pact": _CUS + "dark_pact.png", "Inner Fire": _CUS + "inner_fire.png",
+	"Weaken": _ITV + "scroll_red.png", "Second Wind": _CR + "tile083.png",
+	"Phantom Guard": _CUS + "apparition.png",
+	"Spirit Ward": _CUS + "spirit_ward.png", "Hex": _ITV + "scroll_purple.png",
+	"Soul Sacrifice": _CUS + "soul_sacrifice.png",
+	"Brace": _ITV + "chestplate.png", "Iron Curtain": _CUS + "iron_curtain.png",
+	"Riposte": _CR + "tile009.png", "Bulwark": _ITV + "shield.png",
+}
+
+# Shopkeeper greetings — rotated randomly
+const SHOPKEEPER_GREETINGS = [
+	"Ah, a traveller! Come, browse my wares...\nEverything has a price, but nothing costs\nmore than leaving empty-handed.",
+	"Step closer, friend. These shelves hold\nmore than trinkets — they hold the\ndifference between life and death.",
+	"Welcome, welcome! I've been expecting\nsomeone of your... particular talents.\nSee anything that catches your eye?",
+	"Another soul drawn to my humble shop.\nFate has a way of bringing the right\nbuyer to the right blade.",
+	"In all my years of trade, I've learned\none truth: the wise spend gold before\nthe grave spends them.",
+]
 
 var shop_cards: Array[CardData] = []
 var card_prices: Dictionary = {} # CardData -> int
@@ -15,6 +55,7 @@ var gold_label: Label
 var info_label: Label
 var deck_section: VBoxContainer
 var deck_visible := false
+var _main_vbox: VBoxContainer
 
 
 func _ready() -> void:
@@ -36,7 +77,6 @@ func _generate_shop() -> void:
 			_:
 				card_prices[card] = 50
 
-	# Generate relics for sale
 	var owned = RunManager.get_owned_relic_names()
 	shop_relics = RelicPool.get_reward_choices(RngManager.loot_rng, RELIC_COUNT, owned)
 	for relic in shop_relics:
@@ -79,87 +119,88 @@ void fragment() {
 	vignette.material = mat
 	add_child(vignette)
 
+	# Main scroll so the entire shop can scroll if content overflows
+	var main_scroll = ScrollContainer.new()
+	main_scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
+	main_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(main_scroll)
+
 	var margin = MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	margin.custom_minimum_size.x = 1920
 	margin.add_theme_constant_override("margin_left", 40)
 	margin.add_theme_constant_override("margin_right", 40)
-	margin.add_theme_constant_override("margin_top", 30)
-	margin.add_theme_constant_override("margin_bottom", 30)
-	add_child(margin)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	main_scroll.add_child(margin)
 
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 20)
-	margin.add_child(vbox)
+	_main_vbox = VBoxContainer.new()
+	_main_vbox.add_theme_constant_override("separation", 16)
+	margin.add_child(_main_vbox)
 
-	# Header
-	var title = Label.new()
-	title.text = "Shop"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 38)
-	title.add_theme_color_override("font_color", Color(0.3, 0.7, 0.9))
-	vbox.add_child(title)
+	# ── Shopkeeper banner ──
+	_build_shopkeeper_banner()
 
-	# Gold display
+	# ── Gold display ──
 	gold_label = Label.new()
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	gold_label.add_theme_font_size_override("font_size", 24)
+	gold_label.add_theme_font_size_override("font_size", 22)
 	gold_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.3))
-	vbox.add_child(gold_label)
+	_main_vbox.add_child(gold_label)
 
 	# Info label
 	info_label = Label.new()
-	info_label.text = "Click a card to buy it"
+	info_label.text = "Click a card or relic to purchase"
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.add_theme_font_size_override("font_size", 18)
-	info_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-	vbox.add_child(info_label)
+	info_label.add_theme_font_size_override("font_size", 16)
+	info_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	_main_vbox.add_child(info_label)
 
-	# Cards for sale
+	# ── Section: Wares ──
+	_add_section_header("Wares", Color(0.9, 0.7, 0.3))
+
 	var scroll = ScrollContainer.new()
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(scroll)
+	scroll.custom_minimum_size.y = 300
+	_main_vbox.add_child(scroll)
 
 	card_row = HBoxContainer.new()
 	card_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	card_row.add_theme_constant_override("separation", 24)
+	card_row.add_theme_constant_override("separation", 20)
 	scroll.add_child(card_row)
 
 	_refresh_shop_cards()
 
-	# Relics for sale
+	# ── Section: Artifacts ──
 	if shop_relics.size() > 0:
-		var relic_header = Label.new()
-		relic_header.text = "Relics"
-		relic_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		relic_header.add_theme_font_size_override("font_size", 22)
-		relic_header.add_theme_color_override("font_color", Color(0.7, 0.6, 0.8))
-		vbox.add_child(relic_header)
+		_add_section_header("Artifacts", Color(0.7, 0.55, 0.9))
 
 		relic_row = HBoxContainer.new()
 		relic_row.alignment = BoxContainer.ALIGNMENT_CENTER
-		relic_row.add_theme_constant_override("separation", 24)
-		vbox.add_child(relic_row)
+		relic_row.add_theme_constant_override("separation", 20)
+		_main_vbox.add_child(relic_row)
 
 		_refresh_shop_relics()
 
-	# Bottom buttons
+	# ── Divider ──
+	var divider = HSeparator.new()
+	divider.add_theme_constant_override("separation", 8)
+	divider.add_theme_stylebox_override("separator", _make_divider_style())
+	_main_vbox.add_child(divider)
+
+	# ── Section: Services ──
+	_add_section_header("Services", Color(0.5, 0.75, 0.6))
+
 	var btn_row = HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 30)
-	vbox.add_child(btn_row)
+	_main_vbox.add_child(btn_row)
 
-	var remove_btn = Button.new()
-	remove_btn.text = "Remove a Card (%d gold)" % CARD_REMOVE_COST
-	remove_btn.custom_minimum_size = Vector2(260, 50)
-	remove_btn.add_theme_font_size_override("font_size", 18)
+	var remove_btn = _make_gold_button("Remove a Card  (%d gold)" % CARD_REMOVE_COST, Vector2(280, 52))
 	remove_btn.pressed.connect(_on_remove_pressed)
 	btn_row.add_child(remove_btn)
 
-	var leave_btn = Button.new()
-	leave_btn.text = "Leave Shop"
-	leave_btn.custom_minimum_size = Vector2(200, 50)
-	leave_btn.add_theme_font_size_override("font_size", 18)
+	var leave_btn = _make_gold_button("Leave Shop", Vector2(200, 52))
 	leave_btn.pressed.connect(_on_leave)
 	btn_row.add_child(leave_btn)
 
@@ -167,14 +208,171 @@ void fragment() {
 	deck_section = VBoxContainer.new()
 	deck_section.add_theme_constant_override("separation", 10)
 	deck_section.visible = false
-	vbox.add_child(deck_section)
+	_main_vbox.add_child(deck_section)
 
 	_update_gold()
 
 
+# ============================================================
+# SHOPKEEPER BANNER
+# ============================================================
+
+func _build_shopkeeper_banner() -> void:
+	var banner = PanelContainer.new()
+	var banner_style = StyleBoxFlat.new()
+	banner_style.set_corner_radius_all(12)
+	banner_style.bg_color = Color(0.1, 0.08, 0.16)
+	banner_style.set_border_width_all(2)
+	banner_style.border_color = Color(0.55, 0.4, 0.2, 0.7)
+	banner_style.content_margin_left = 24
+	banner_style.content_margin_right = 24
+	banner_style.content_margin_top = 16
+	banner_style.content_margin_bottom = 16
+	banner.add_theme_stylebox_override("panel", banner_style)
+	_main_vbox.add_child(banner)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 20)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	banner.add_child(hbox)
+
+	# Shopkeeper portrait — sprite portrait like enemies
+	var portrait_frame = PanelContainer.new()
+	portrait_frame.custom_minimum_size = Vector2(90, 100)
+	var pf_style = StyleBoxFlat.new()
+	pf_style.set_corner_radius_all(8)
+	pf_style.bg_color = Color(0.12, 0.09, 0.06)
+	pf_style.set_border_width_all(2)
+	pf_style.border_color = Color(0.65, 0.5, 0.25)
+	pf_style.content_margin_left = 4
+	pf_style.content_margin_right = 4
+	pf_style.content_margin_top = 4
+	pf_style.content_margin_bottom = 4
+	portrait_frame.add_theme_stylebox_override("panel", pf_style)
+	hbox.add_child(portrait_frame)
+
+	# Sprite portrait using Evil Wizard 2 idle sheet (robed chronicler figure)
+	var sheet: Texture2D = load("res://assets/sprites/bosses/evil_wizard_2/EVil Wizard 2/Sprites/Idle.png")
+	var atlas = AtlasTexture.new()
+	atlas.atlas = sheet
+	atlas.region = Rect2(100, 64, 72, 110)
+	var portrait_tex = TextureRect.new()
+	portrait_tex.texture = atlas
+	portrait_tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	portrait_tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	portrait_tex.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	portrait_tex.custom_minimum_size = Vector2(80, 90)
+	portrait_tex.modulate = Color(1.0, 0.9, 0.7) # Warm parchment tint
+	portrait_frame.add_child(portrait_tex)
+
+	# Right side: name + greeting
+	var text_vbox = VBoxContainer.new()
+	text_vbox.add_theme_constant_override("separation", 6)
+	text_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(text_vbox)
+
+	var name_lbl = Label.new()
+	name_lbl.text = "The Chronicler's Bazaar"
+	name_lbl.add_theme_font_size_override("font_size", 28)
+	name_lbl.add_theme_color_override("font_color", Color(0.85, 0.7, 0.35))
+	text_vbox.add_child(name_lbl)
+
+	var greeting_lbl = Label.new()
+	var greeting_idx = RngManager.loot_rng.randi_range(0, SHOPKEEPER_GREETINGS.size() - 1)
+	greeting_lbl.text = SHOPKEEPER_GREETINGS[greeting_idx]
+	greeting_lbl.add_theme_font_size_override("font_size", 15)
+	greeting_lbl.add_theme_color_override("font_color", Color(0.6, 0.55, 0.45))
+	greeting_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
+	text_vbox.add_child(greeting_lbl)
+
+
+# ============================================================
+# SECTION HEADERS
+# ============================================================
+
+func _add_section_header(text: String, color: Color) -> void:
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 12)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	_main_vbox.add_child(hbox)
+
+	# Left flourish
+	var left = Label.new()
+	left.text = "---"
+	left.add_theme_font_size_override("font_size", 16)
+	left.add_theme_color_override("font_color", color.darkened(0.4))
+	hbox.add_child(left)
+
+	var lbl = Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_color_override("font_color", color)
+	hbox.add_child(lbl)
+
+	# Right flourish
+	var right = Label.new()
+	right.text = "---"
+	right.add_theme_font_size_override("font_size", 16)
+	right.add_theme_color_override("font_color", color.darkened(0.4))
+	hbox.add_child(right)
+
+
+# ============================================================
+# STYLED BUTTONS
+# ============================================================
+
+func _make_gold_button(text: String, min_size: Vector2) -> Button:
+	var btn = Button.new()
+	btn.text = text
+	btn.custom_minimum_size = min_size
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+
+	var normal = StyleBoxFlat.new()
+	normal.set_corner_radius_all(8)
+	normal.bg_color = Color(0.18, 0.13, 0.26)
+	normal.set_border_width_all(2)
+	normal.border_color = Color(0.8, 0.6, 0.25)
+	normal.content_margin_left = 16
+	normal.content_margin_right = 16
+	normal.content_margin_top = 10
+	normal.content_margin_bottom = 10
+	btn.add_theme_stylebox_override("normal", normal)
+
+	var hover = normal.duplicate()
+	hover.bg_color = Color(0.26, 0.2, 0.36)
+	hover.border_color = Color(0.95, 0.75, 0.3)
+	btn.add_theme_stylebox_override("hover", hover)
+
+	var pressed = normal.duplicate()
+	pressed.bg_color = Color(0.12, 0.09, 0.18)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	btn.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))
+	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.8))
+
+	return btn
+
+
+func _make_divider_style() -> StyleBoxFlat:
+	var s = StyleBoxFlat.new()
+	s.bg_color = Color(0.4, 0.3, 0.18, 0.4)
+	s.content_margin_top = 1
+	s.content_margin_bottom = 1
+	return s
+
+
+# ============================================================
+# GOLD
+# ============================================================
+
 func _update_gold() -> void:
 	gold_label.text = "Gold: %d" % RunManager.gold
 
+
+# ============================================================
+# SHOP CARDS
+# ============================================================
 
 func _refresh_shop_cards() -> void:
 	for child in card_row.get_children():
@@ -186,21 +384,17 @@ func _refresh_shop_cards() -> void:
 		card_row.add_child(panel)
 
 
-# ============================================================
-# SHOP CARD PANEL
-# ============================================================
-
 func _create_shop_card(card: CardData, price: int) -> PanelContainer:
 	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(200, 280)
+	panel.custom_minimum_size = Vector2(190, 290)
 
 	var style = StyleBoxFlat.new()
 	style.set_corner_radius_all(10)
 	style.set_border_width_all(3)
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
 
 	var can_afford = RunManager.gold >= price
 
@@ -215,7 +409,6 @@ func _create_shop_card(card: CardData, price: int) -> PanelContainer:
 			style.bg_color = Color(0.28, 0.24, 0.08)
 			style.border_color = Color(0.9, 0.75, 0.15)
 
-	# Upgraded card green border tint
 	if card.upgraded:
 		style.border_color = style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
 
@@ -225,68 +418,133 @@ func _create_shop_card(card: CardData, price: int) -> PanelContainer:
 		panel.modulate = Color(0.5, 0.5, 0.5)
 
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
+	vbox.add_theme_constant_override("separation", 3)
 	panel.add_child(vbox)
 
-	# Price tag
-	var price_lbl = Label.new()
-	price_lbl.text = "%d gold" % price
-	price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	price_lbl.add_theme_font_size_override("font_size", 16)
-	if can_afford:
-		price_lbl.add_theme_color_override("font_color", Color(0.95, 0.85, 0.3))
-	else:
-		price_lbl.add_theme_color_override("font_color", Color(0.7, 0.3, 0.3))
-	vbox.add_child(price_lbl)
+	# ── Price tag (top, prominent) ──
+	var price_row = HBoxContainer.new()
+	price_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(price_row)
 
-	# Energy cost
+	var coin_lbl = Label.new()
+	coin_lbl.text = "%d gold" % price
+	coin_lbl.add_theme_font_size_override("font_size", 15)
+	coin_lbl.add_theme_color_override("font_color",
+		Color(0.95, 0.85, 0.3) if can_afford else Color(0.7, 0.3, 0.3))
+	price_row.add_child(coin_lbl)
+
+	# ── Energy cost ornament ──
+	var cost_container = PanelContainer.new()
+	cost_container.custom_minimum_size = Vector2(34, 34)
+	var cost_style = StyleBoxFlat.new()
+	cost_style.set_corner_radius_all(17)
+	cost_style.bg_color = Color(0.18, 0.14, 0.06)
+	cost_style.set_border_width_all(2)
+	cost_style.border_color = Color(0.95, 0.8, 0.2)
+	cost_style.content_margin_left = 4
+	cost_style.content_margin_right = 4
+	cost_style.content_margin_top = 2
+	cost_style.content_margin_bottom = 2
+	cost_container.add_theme_stylebox_override("panel", cost_style)
 	var cost_lbl = Label.new()
 	cost_lbl.text = str(card.energy_cost)
-	cost_lbl.add_theme_font_size_override("font_size", 24)
+	cost_lbl.add_theme_font_size_override("font_size", 20)
 	cost_lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.3))
-	vbox.add_child(cost_lbl)
+	cost_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cost_container.add_child(cost_lbl)
+	vbox.add_child(cost_container)
 
-	# Card name
+	# ── Card name ──
 	var name_lbl = Label.new()
 	name_lbl.text = card.card_name
-	name_lbl.add_theme_font_size_override("font_size", 18)
+	name_lbl.add_theme_font_size_override("font_size", 16)
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(name_lbl)
 
-	# Type + Rarity
+	# ── Type + Rarity ──
 	var type_names = ["Attack", "Skill", "Power"]
 	var rarity_names = ["Starter", "Common", "Uncommon", "Rare"]
 	var rarity_colors = [
-		Color(0.5, 0.5, 0.5),
-		Color(0.6, 0.6, 0.6),
-		Color(0.3, 0.7, 0.9),
-		Color(0.95, 0.8, 0.2),
+		Color(0.5, 0.5, 0.5), Color(0.55, 0.55, 0.55),
+		Color(0.3, 0.7, 0.9), Color(0.95, 0.8, 0.2),
 	]
 	var type_lbl = Label.new()
 	type_lbl.text = "%s - %s" % [type_names[card.card_type], rarity_names[card.rarity]]
-	type_lbl.add_theme_font_size_override("font_size", 12)
+	type_lbl.add_theme_font_size_override("font_size", 11)
 	type_lbl.add_theme_color_override("font_color", rarity_colors[card.rarity])
 	type_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(type_lbl)
 
-	# Spacer
+	# ── Personality tag ──
+	if card.personality != CardData.PersonalityType.NEUTRAL:
+		var pers_lbl = Label.new()
+		pers_lbl.text = _get_personality_label(card.personality)
+		pers_lbl.add_theme_font_size_override("font_size", 11)
+		pers_lbl.add_theme_color_override("font_color", _get_personality_color(card.personality))
+		pers_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		vbox.add_child(pers_lbl)
+
+	# ── Card art frame with icon ──
+	var art_frame = PanelContainer.new()
+	art_frame.custom_minimum_size = Vector2(0, 42)
+	var art_style = StyleBoxFlat.new()
+	art_style.set_corner_radius_all(4)
+	art_style.content_margin_top = 4
+	art_style.content_margin_bottom = 4
+	match card.card_type:
+		CardData.CardType.ATTACK:
+			art_style.bg_color = Color(0.4, 0.1, 0.08)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.7, 0.18, 0.1, 0.5)
+		CardData.CardType.SKILL:
+			art_style.bg_color = Color(0.08, 0.15, 0.35)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.15, 0.28, 0.65, 0.5)
+		CardData.CardType.POWER:
+			art_style.bg_color = Color(0.35, 0.28, 0.06)
+			art_style.set_border_width_all(1)
+			art_style.border_color = Color(0.65, 0.5, 0.1, 0.5)
+	art_frame.add_theme_stylebox_override("panel", art_style)
+
+	var icon_file = CARD_ICONS.get(card.card_name, "")
+	if icon_file != "":
+		var art_icon = TextureRect.new()
+		art_icon.texture = load(icon_file)
+		art_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		art_icon.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		art_icon.custom_minimum_size = Vector2(34, 34)
+		art_frame.add_child(art_icon)
+	else:
+		var art_lbl = Label.new()
+		match card.card_type:
+			CardData.CardType.ATTACK: art_lbl.text = "?"
+			CardData.CardType.SKILL: art_lbl.text = "?"
+			CardData.CardType.POWER: art_lbl.text = "?"
+		art_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		art_lbl.add_theme_font_size_override("font_size", 22)
+		art_lbl.add_theme_color_override("font_color", style.border_color.lightened(0.3))
+		art_frame.add_child(art_lbl)
+	vbox.add_child(art_frame)
+
+	# ── Spacer ──
 	var spacer = Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(spacer)
 
-	# Description
+	# ── Description ──
 	var desc_lbl = Label.new()
 	desc_lbl.text = card.get_generated_description()
-	desc_lbl.add_theme_font_size_override("font_size", 14)
+	desc_lbl.add_theme_font_size_override("font_size", 13)
 	desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(desc_lbl)
 
-	# Exhaust tag
+	# ── Exhaust tag ──
 	if card.exhaust:
 		var ex_lbl = Label.new()
 		ex_lbl.text = "Exhaust"
-		ex_lbl.add_theme_font_size_override("font_size", 12)
+		ex_lbl.add_theme_font_size_override("font_size", 11)
 		ex_lbl.add_theme_color_override("font_color", Color(0.7, 0.4, 0.4))
 		ex_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		vbox.add_child(ex_lbl)
@@ -295,12 +553,12 @@ func _create_shop_card(card: CardData, price: int) -> PanelContainer:
 
 	panel.gui_input.connect(_on_shop_card_input.bind(card))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	panel.pivot_offset = Vector2(100, 140)
+	panel.pivot_offset = Vector2(95, 145)
 	if can_afford:
 		panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		panel.mouse_entered.connect(func():
 			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-			t.tween_property(panel, "scale", Vector2(1.05, 1.05), 0.12)
+			t.tween_property(panel, "scale", Vector2(1.06, 1.06), 0.12)
 		)
 		panel.mouse_exited.connect(func():
 			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
@@ -335,7 +593,7 @@ func _on_shop_card_input(event: InputEvent, card: CardData) -> void:
 
 
 # ============================================================
-# BUYING RELICS
+# SHOP RELICS
 # ============================================================
 
 func _refresh_shop_relics() -> void:
@@ -350,7 +608,7 @@ func _refresh_shop_relics() -> void:
 
 func _create_shop_relic(relic: RelicData, price: int) -> PanelContainer:
 	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(220, 140)
+	panel.custom_minimum_size = Vector2(240, 150)
 
 	var rarity_colors = {
 		RelicData.RelicRarity.COMMON: Color(0.6, 0.6, 0.6),
@@ -366,27 +624,29 @@ func _create_shop_relic(relic: RelicData, price: int) -> PanelContainer:
 	style.set_border_width_all(3)
 	style.bg_color = Color(0.16, 0.13, 0.22)
 	style.border_color = border_color
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
+	style.content_margin_left = 14
+	style.content_margin_right = 14
+	style.content_margin_top = 12
+	style.content_margin_bottom = 12
 	panel.add_theme_stylebox_override("panel", style)
 
 	if not can_afford:
 		panel.modulate = Color(0.5, 0.5, 0.5)
 
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
+	vbox.add_theme_constant_override("separation", 5)
 	panel.add_child(vbox)
 
+	# Price
 	var price_lbl = Label.new()
 	price_lbl.text = "%d gold" % price
 	price_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	price_lbl.add_theme_font_size_override("font_size", 16)
+	price_lbl.add_theme_font_size_override("font_size", 15)
 	price_lbl.add_theme_color_override("font_color",
 		Color(0.95, 0.85, 0.3) if can_afford else Color(0.7, 0.3, 0.3))
 	vbox.add_child(price_lbl)
 
+	# Relic name
 	var name_lbl = Label.new()
 	name_lbl.text = relic.relic_name
 	name_lbl.add_theme_font_size_override("font_size", 18)
@@ -394,6 +654,21 @@ func _create_shop_relic(relic: RelicData, price: int) -> PanelContainer:
 	name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(name_lbl)
 
+	# Rarity tag
+	var rarity_tags = {
+		RelicData.RelicRarity.COMMON: "Common",
+		RelicData.RelicRarity.UNCOMMON: "Uncommon",
+		RelicData.RelicRarity.RARE: "Rare",
+		RelicData.RelicRarity.BOSS: "Boss",
+	}
+	var rarity_lbl = Label.new()
+	rarity_lbl.text = rarity_tags.get(relic.rarity, "")
+	rarity_lbl.add_theme_font_size_override("font_size", 11)
+	rarity_lbl.add_theme_color_override("font_color", border_color.darkened(0.2))
+	rarity_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(rarity_lbl)
+
+	# Description
 	var desc_lbl = Label.new()
 	desc_lbl.text = relic.description
 	desc_lbl.add_theme_font_size_override("font_size", 13)
@@ -406,8 +681,17 @@ func _create_shop_relic(relic: RelicData, price: int) -> PanelContainer:
 
 	panel.gui_input.connect(_on_shop_relic_input.bind(relic))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.pivot_offset = Vector2(120, 75)
 	if can_afford:
 		panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		panel.mouse_entered.connect(func():
+			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			t.tween_property(panel, "scale", Vector2(1.05, 1.05), 0.12)
+		)
+		panel.mouse_exited.connect(func():
+			var t = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+			t.tween_property(panel, "scale", Vector2.ONE, 0.12)
+		)
 
 	return panel
 
@@ -437,11 +721,10 @@ func _on_shop_relic_input(event: InputEvent, relic: RelicData) -> void:
 # ============================================================
 
 func _on_remove_pressed() -> void:
-	# Always allow closing the deck section
 	if deck_visible:
 		deck_section.visible = false
 		deck_visible = false
-		info_label.text = "Click a card to buy it"
+		info_label.text = "Click a card or relic to purchase"
 		return
 
 	if RunManager.gold < CARD_REMOVE_COST:
@@ -460,7 +743,6 @@ func _show_deck_for_removal() -> void:
 	deck_section.visible = true
 	info_label.text = "Click a card to remove it (%d gold)" % CARD_REMOVE_COST
 
-	# Clear previous
 	for child in deck_section.get_children():
 		child.queue_free()
 
@@ -475,10 +757,8 @@ func _show_deck_for_removal() -> void:
 	header.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	header_row.add_child(header)
 
-	var cancel_btn = Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(100, 36)
-	cancel_btn.add_theme_font_size_override("font_size", 16)
+	var cancel_btn = _make_gold_button("Cancel", Vector2(100, 36))
+	cancel_btn.add_theme_font_size_override("font_size", 14)
 	cancel_btn.pressed.connect(_on_cancel_remove)
 	header_row.add_child(cancel_btn)
 
@@ -500,7 +780,6 @@ func _show_deck_for_removal() -> void:
 		btn.pressed.connect(_on_remove_card.bind(i))
 		btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-		# Color by type
 		var btn_style = StyleBoxFlat.new()
 		btn_style.set_corner_radius_all(6)
 		btn_style.content_margin_left = 8
@@ -517,7 +796,6 @@ func _show_deck_for_removal() -> void:
 			CardData.CardType.POWER:
 				btn_style.bg_color = Color(0.35, 0.3, 0.08)
 				btn_style.border_color = Color(0.7, 0.55, 0.1)
-		# Upgraded card green border tint
 		if card.upgraded:
 			btn_style.border_color = btn_style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
 		btn_style.set_border_width_all(2)
@@ -533,7 +811,7 @@ func _show_deck_for_removal() -> void:
 func _on_cancel_remove() -> void:
 	deck_section.visible = false
 	deck_visible = false
-	info_label.text = "Click a card to buy it"
+	info_label.text = "Click a card or relic to purchase"
 
 
 func _on_remove_card(index: int) -> void:
@@ -544,6 +822,27 @@ func _on_remove_card(index: int) -> void:
 	info_label.text = "Removed %s!" % card.card_name
 	_update_gold()
 	_show_deck_for_removal()
+
+
+# ============================================================
+# PERSONALITY HELPERS
+# ============================================================
+
+func _get_personality_label(pers: CardData.PersonalityType) -> String:
+	if RunManager.current_character:
+		if pers == CardData.PersonalityType.PRIMARY:
+			return RunManager.current_character.primary_personality
+		if pers == CardData.PersonalityType.SECONDARY:
+			return RunManager.current_character.secondary_personality
+	return "Neutral"
+
+
+func _get_personality_color(pers: CardData.PersonalityType) -> Color:
+	if pers == CardData.PersonalityType.PRIMARY:
+		return Color(0.9, 0.5, 0.2)
+	if pers == CardData.PersonalityType.SECONDARY:
+		return Color(0.4, 0.6, 0.9)
+	return Color(0.6, 0.6, 0.6)
 
 
 # ============================================================

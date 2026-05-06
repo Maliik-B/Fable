@@ -74,40 +74,40 @@ static func _build_pool() -> Array[RelicData]:
 	var pool: Array[RelicData] = []
 
 	# -- COMMON --
-	pool.append(_relic("Burning Blood", "Heal 6 HP after each combat.",
+	pool.append(_relic("Crimson Ink", "Heal 6 HP after each combat.",
 		RelicData.RelicRarity.COMMON, RelicData.RelicTrigger.ON_COMBAT_END,
 		RelicData.RelicEffect.HEAL, 6))
 
-	pool.append(_relic("Vajra", "Start each combat with 1 Strength.",
+	pool.append(_relic("Iron Quill", "Start each combat with 1 Strength.",
 		RelicData.RelicRarity.COMMON, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.GAIN_STRENGTH, 1))
 
-	pool.append(_relic("Anchor", "Start each combat with 10 Block.",
+	pool.append(_relic("Steadfast Binding", "Start each combat with 10 Block.",
 		RelicData.RelicRarity.COMMON, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.GAIN_BLOCK, 10))
 
-	pool.append(_relic("Bag of Marbles", "At the start of combat, apply 1 Vulnerable to ALL enemies.",
+	pool.append(_relic("Scattered Pages", "At the start of combat, apply 1 Vulnerable to ALL enemies.",
 		RelicData.RelicRarity.COMMON, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.APPLY_VULNERABLE_ALL, 1))
 
-	pool.append(_relic("Red Mask", "At the start of combat, apply 1 Weak to ALL enemies.",
+	pool.append(_relic("Tattered Veil", "At the start of combat, apply 1 Weak to ALL enemies.",
 		RelicData.RelicRarity.COMMON, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.APPLY_WEAK_ALL, 1))
 
 	# -- UNCOMMON --
-	pool.append(_relic("Oddly Smooth Stone", "Start each combat with 1 Dexterity.",
+	pool.append(_relic("Worn Talisman", "Start each combat with 1 Dexterity.",
 		RelicData.RelicRarity.UNCOMMON, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.GAIN_DEXTERITY, 1))
 
-	pool.append(_relic("Old Coin", "Gain 15 bonus Gold after each combat.",
+	pool.append(_relic("Gilded Bookmark", "Gain 15 bonus Gold after each combat.",
 		RelicData.RelicRarity.UNCOMMON, RelicData.RelicTrigger.ON_COMBAT_END,
 		RelicData.RelicEffect.GAIN_GOLD, 15))
 
-	pool.append(_relic("Mango", "Upon pickup, gain 14 Max HP.",
+	pool.append(_relic("Heartfruit", "Upon pickup, gain 14 Max HP.",
 		RelicData.RelicRarity.UNCOMMON, RelicData.RelicTrigger.ON_PICKUP,
 		RelicData.RelicEffect.GAIN_MAX_HP, 14))
 
-	pool.append(_relic("Bag of Preparation", "Draw 2 additional cards at the start of combat.",
+	pool.append(_relic("Prologue Scroll", "Draw 2 additional cards at the start of combat.",
 		RelicData.RelicRarity.UNCOMMON, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.DRAW_CARDS, 2))
 
@@ -116,7 +116,7 @@ static func _build_pool() -> Array[RelicData]:
 		RelicData.RelicEffect.GAIN_PASSION, 3))
 
 	# -- RARE --
-	pool.append(_relic("War Paint", "Gain 5 Block at the start of each turn.",
+	pool.append(_relic("Guardian's Sigil", "Gain 5 Block at the start of each turn.",
 		RelicData.RelicRarity.RARE, RelicData.RelicTrigger.ON_TURN_START,
 		RelicData.RelicEffect.GAIN_BLOCK, 5))
 
@@ -133,19 +133,19 @@ static func _build_pool() -> Array[RelicData]:
 		RelicData.RelicEffect.GAIN_STRENGTH, 1))
 
 	# -- BOSS --
-	pool.append(_relic("Black Blood", "Heal 12 HP after each combat.",
+	pool.append(_relic("Sanguine Tome", "Heal 12 HP after each combat.",
 		RelicData.RelicRarity.BOSS, RelicData.RelicTrigger.ON_COMBAT_END,
 		RelicData.RelicEffect.HEAL, 12))
 
-	pool.append(_relic("Frozen Eye", "Draw 2 additional cards at the start of each turn.",
+	pool.append(_relic("Seer's Lens", "Draw 2 additional cards at the start of each turn.",
 		RelicData.RelicRarity.BOSS, RelicData.RelicTrigger.ON_TURN_START,
 		RelicData.RelicEffect.DRAW_CARDS, 2))
 
-	pool.append(_relic("Mark of Pain", "Start each combat with 2 Strength. Apply 1 Vulnerable to yourself.",
+	pool.append(_relic("Brand of Fury", "Start each combat with 2 Strength. Apply 1 Vulnerable to yourself.",
 		RelicData.RelicRarity.BOSS, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.GAIN_STRENGTH, 2))
 
-	pool.append(_relic("Runic Crown", "Start each combat with 3 Dexterity.",
+	pool.append(_relic("Diadem of Grace", "Start each combat with 3 Dexterity.",
 		RelicData.RelicRarity.BOSS, RelicData.RelicTrigger.ON_COMBAT_START,
 		RelicData.RelicEffect.GAIN_DEXTERITY, 3))
 

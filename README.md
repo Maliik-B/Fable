@@ -22,6 +22,12 @@ Story choices shape gameplay. A passion system shifts characters between dual pe
 
 *Procedural branching map — combat, elite, rest, shop, event, mystery, and boss nodes across a 3-act structure.*
 
+## Shop
+
+![Shop](screenshots/shop.gif)
+
+*The Chronicler's Bazaar — buy cards, acquire relics, and thin your deck.*
+
 ## Screenshots
 
 | | |

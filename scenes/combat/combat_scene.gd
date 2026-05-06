@@ -46,19 +46,19 @@ const _CUS = "res://assets/sprites/icons/custom/"
 const CARD_ICONS = {
 	# Starter attacks
 	"Strike": _CR + "tile000.png",
-	"Bash": _CR + "tile025.png",
+	"Stagger": _CR + "tile025.png",
 	"Noxious Strike": _CUS + "noxious_strike.png",
-	"Cleave": _CR + "tile004.png",
+	"Wide Arc": _CR + "tile004.png",
 	"Flame Strike": _CUS + "flame_strike.png",
 	# Generic attacks
-	"Heavy Strike": _CR + "tile008.png",
-	"Twin Strike": _CUS + "twin_strike.png",
+	"Crushing Blow": _CR + "tile008.png",
+	"Paired Strikes": _CUS + "twin_strike.png",
 	"Sweep": _CR + "tile011.png",
 	"Reckless Swing": _CR + "tile035.png",
-	"Carnage": _CR + "tile041.png",
+	"Havoc": _CR + "tile041.png",
 	"Poison Fang": _CUS + "poison_fang.png",
 	"Armor Break": _CR + "tile016.png",
-	"Immolate": _CUS + "immolate.png",
+	"Wildfire": _CUS + "immolate.png",
 	"Execute": _CR + "tile012.png",
 	# Primary (Magic) attacks
 	"Soul Flare": _CUS + "soul_flare.png",
@@ -75,15 +75,15 @@ const CARD_ICONS = {
 	"Defend": _ITV + "shield.png",
 	"Meditate": _CUS + "meditate.png",
 	# Generic skills
-	"Iron Wave": _ITV + "gem_blue.png",
+	"Retaliate": _ITV + "gem_blue.png",
 	"Shield Bash": _ITV + "gauntlet.png",
 	"Battle Cry": _CUS + "battle_cry.png",
-	"Fortify": _ITV + "helmet.png",
+	"Bolster": _ITV + "helmet.png",
 	"Dark Pact": _CUS + "dark_pact.png",
 	"Inner Fire": _CUS + "inner_fire.png",
 	"Weaken": _ITV + "scroll_red.png",
-	"Adrenaline": _CR + "tile083.png",
-	"Apparition": _CUS + "apparition.png",
+	"Second Wind": _CR + "tile083.png",
+	"Phantom Guard": _CUS + "apparition.png",
 	# Primary (Magic) skills
 	"Spirit Ward": _CUS + "spirit_ward.png",
 	"Hex": _ITV + "scroll_purple.png",
@@ -629,7 +629,7 @@ func _create_test_character() -> CharacterData:
 		CardData.TargetType.SINGLE_ENEMY, [_make_damage(6)])
 	var defend = _make_card("Defend", 1, CardData.CardType.SKILL,
 		CardData.TargetType.SELF, [_make_block(5)])
-	var bash = _make_card("Bash", 2, CardData.CardType.ATTACK,
+	var bash = _make_card("Stagger", 2, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, [_make_damage(8), _make_status(StatusEffects.VULNERABLE, 2)])
 	var noxious = _make_card("Noxious Strike", 1, CardData.CardType.ATTACK,
 		CardData.TargetType.SINGLE_ENEMY, [_make_damage(4), _make_status(StatusEffects.POISON, 3)])
@@ -643,7 +643,7 @@ func _create_test_character() -> CharacterData:
 		c.starting_deck.append(strike)
 	for i in 2:
 		c.starting_deck.append(defend)
-	var cleave = _make_card("Cleave", 1, CardData.CardType.ATTACK,
+	var cleave = _make_card("Wide Arc", 1, CardData.CardType.ATTACK,
 		CardData.TargetType.ALL_ENEMIES, [_make_damage(4)])
 	c.starting_deck.append(bash)
 	c.starting_deck.append(noxious)
