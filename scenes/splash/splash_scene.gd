@@ -19,7 +19,7 @@ func _process(delta: float) -> void:
 func _build_ui() -> void:
 	# Dark background
 	var bg = ColorRect.new()
-	bg.color = Color(0.02, 0.02, 0.04)
+	bg.color = Color(0.04, 0.04, 0.1)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -49,7 +49,7 @@ func _build_ui() -> void:
 	subtitle.text = "A Portfolio Production"
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 18)
-	subtitle.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+	subtitle.add_theme_color_override("font_color", Color(0.45, 0.4, 0.55))
 	vbox.add_child(subtitle)
 
 	# Full-screen black overlay for fade effect (starts fully opaque)

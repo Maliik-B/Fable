@@ -18,7 +18,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.05, 0.07, 0.05)
+	bg.color = Color(0.06, 0.12, 0.08)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -125,7 +125,7 @@ func _add_choice_button(title_text: String, desc_text: String,
 	btn.add_theme_stylebox_override("pressed", pressed_style)
 
 	var disabled_style = style.duplicate()
-	disabled_style.bg_color = Color(0.15, 0.15, 0.15)
+	disabled_style.bg_color = Color(0.16, 0.14, 0.2)
 	disabled_style.border_color = Color(0.3, 0.3, 0.3)
 	btn.add_theme_stylebox_override("disabled", disabled_style)
 
@@ -221,14 +221,14 @@ func _create_upgrade_card(card: CardData, index: int) -> PanelContainer:
 
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			style.bg_color = Color(0.25, 0.12, 0.12)
-			style.border_color = Color(0.8, 0.3, 0.3)
+			style.bg_color = Color(0.3, 0.12, 0.1)
+			style.border_color = Color(0.9, 0.25, 0.2)
 		CardData.CardType.SKILL:
-			style.bg_color = Color(0.12, 0.15, 0.25)
-			style.border_color = Color(0.3, 0.5, 0.8)
+			style.bg_color = Color(0.1, 0.14, 0.3)
+			style.border_color = Color(0.25, 0.45, 0.9)
 		CardData.CardType.POWER:
-			style.bg_color = Color(0.25, 0.22, 0.1)
-			style.border_color = Color(0.8, 0.7, 0.2)
+			style.bg_color = Color(0.28, 0.24, 0.08)
+			style.border_color = Color(0.9, 0.75, 0.15)
 
 	# Upgraded card green border tint
 	if card.upgraded:

@@ -23,7 +23,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.05, 0.03, 0.07)
+	bg.color = Color(0.09, 0.05, 0.14)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -62,7 +62,7 @@ void fragment() {
 	title.text = event.event_name
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 34)
-	title.add_theme_color_override("font_color", Color(0.7, 0.5, 0.8))
+	title.add_theme_color_override("font_color", Color(0.8, 0.55, 0.9))
 	main_vbox.add_child(title)
 
 	# Description
@@ -128,8 +128,8 @@ func _make_choice_button(choice: EventData.EventChoice, index: int) -> Button:
 	var style = StyleBoxFlat.new()
 	style.set_corner_radius_all(8)
 	style.set_border_width_all(2)
-	style.bg_color = Color(0.12, 0.1, 0.16)
-	style.border_color = Color(0.5, 0.4, 0.6)
+	style.bg_color = Color(0.14, 0.11, 0.2)
+	style.border_color = Color(0.55, 0.4, 0.7)
 	style.content_margin_left = 20
 	style.content_margin_right = 20
 	style.content_margin_top = 10
@@ -137,16 +137,16 @@ func _make_choice_button(choice: EventData.EventChoice, index: int) -> Button:
 	btn.add_theme_stylebox_override("normal", style)
 
 	var hover_style = style.duplicate()
-	hover_style.bg_color = Color(0.18, 0.14, 0.24)
-	hover_style.border_color = Color(0.7, 0.5, 0.8)
+	hover_style.bg_color = Color(0.22, 0.16, 0.3)
+	hover_style.border_color = Color(0.8, 0.55, 0.9)
 	btn.add_theme_stylebox_override("hover", hover_style)
 
 	var pressed_style = style.duplicate()
-	pressed_style.bg_color = Color(0.08, 0.06, 0.1)
+	pressed_style.bg_color = Color(0.1, 0.07, 0.14)
 	btn.add_theme_stylebox_override("pressed", pressed_style)
 
 	var disabled_style = style.duplicate()
-	disabled_style.bg_color = Color(0.1, 0.1, 0.1)
+	disabled_style.bg_color = Color(0.14, 0.11, 0.2)
 	disabled_style.border_color = Color(0.3, 0.3, 0.3)
 	btn.add_theme_stylebox_override("disabled", disabled_style)
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
@@ -289,14 +289,14 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			style.bg_color = Color(0.25, 0.12, 0.12)
-			style.border_color = Color(0.8, 0.3, 0.3)
+			style.bg_color = Color(0.3, 0.12, 0.1)
+			style.border_color = Color(0.9, 0.25, 0.2)
 		CardData.CardType.SKILL:
-			style.bg_color = Color(0.12, 0.15, 0.25)
-			style.border_color = Color(0.3, 0.5, 0.8)
+			style.bg_color = Color(0.1, 0.14, 0.3)
+			style.border_color = Color(0.25, 0.45, 0.9)
 		CardData.CardType.POWER:
-			style.bg_color = Color(0.25, 0.22, 0.1)
-			style.border_color = Color(0.8, 0.7, 0.2)
+			style.bg_color = Color(0.28, 0.24, 0.08)
+			style.border_color = Color(0.9, 0.75, 0.15)
 
 	panel.add_theme_stylebox_override("panel", style)
 
@@ -403,14 +403,14 @@ func _create_removal_panel(card: CardData, index: int) -> PanelContainer:
 
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			style.bg_color = Color(0.25, 0.12, 0.12)
-			style.border_color = Color(0.8, 0.3, 0.3)
+			style.bg_color = Color(0.3, 0.12, 0.1)
+			style.border_color = Color(0.9, 0.25, 0.2)
 		CardData.CardType.SKILL:
-			style.bg_color = Color(0.12, 0.15, 0.25)
-			style.border_color = Color(0.3, 0.5, 0.8)
+			style.bg_color = Color(0.1, 0.14, 0.3)
+			style.border_color = Color(0.25, 0.45, 0.9)
 		CardData.CardType.POWER:
-			style.bg_color = Color(0.25, 0.22, 0.1)
-			style.border_color = Color(0.8, 0.7, 0.2)
+			style.bg_color = Color(0.28, 0.24, 0.08)
+			style.border_color = Color(0.9, 0.75, 0.15)
 
 	panel.add_theme_stylebox_override("panel", style)
 

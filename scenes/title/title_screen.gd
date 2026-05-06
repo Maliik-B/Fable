@@ -18,7 +18,7 @@ func _process(delta: float) -> void:
 func _build_ui() -> void:
 	# Background
 	var bg = ColorRect.new()
-	bg.color = Color(0.04, 0.03, 0.06)
+	bg.color = Color(0.08, 0.06, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -88,8 +88,8 @@ func _build_ui() -> void:
 	var btn_style = StyleBoxFlat.new()
 	btn_style.set_corner_radius_all(12)
 	btn_style.set_border_width_all(2)
-	btn_style.bg_color = Color(0.15, 0.12, 0.2)
-	btn_style.border_color = Color(0.7, 0.55, 0.3)
+	btn_style.bg_color = Color(0.18, 0.13, 0.26)
+	btn_style.border_color = Color(0.8, 0.6, 0.25)
 	btn_style.content_margin_left = 20
 	btn_style.content_margin_right = 20
 	btn_style.content_margin_top = 12
@@ -97,12 +97,12 @@ func _build_ui() -> void:
 	start_btn.add_theme_stylebox_override("normal", btn_style)
 
 	var hover_style = btn_style.duplicate()
-	hover_style.bg_color = Color(0.22, 0.18, 0.3)
-	hover_style.border_color = Color(0.9, 0.7, 0.35)
+	hover_style.bg_color = Color(0.26, 0.2, 0.36)
+	hover_style.border_color = Color(1.0, 0.78, 0.3)
 	start_btn.add_theme_stylebox_override("hover", hover_style)
 
 	var pressed_style = btn_style.duplicate()
-	pressed_style.bg_color = Color(0.1, 0.08, 0.14)
+	pressed_style.bg_color = Color(0.12, 0.09, 0.18)
 	start_btn.add_theme_stylebox_override("pressed", pressed_style)
 	start_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	start_btn.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))
@@ -123,8 +123,8 @@ func _build_ui() -> void:
 	var settings_style = StyleBoxFlat.new()
 	settings_style.set_corner_radius_all(10)
 	settings_style.set_border_width_all(2)
-	settings_style.bg_color = Color(0.15, 0.12, 0.2)
-	settings_style.border_color = Color(0.7, 0.55, 0.3)
+	settings_style.bg_color = Color(0.18, 0.13, 0.26)
+	settings_style.border_color = Color(0.8, 0.6, 0.25)
 	settings_style.content_margin_left = 16
 	settings_style.content_margin_right = 16
 	settings_style.content_margin_top = 8
@@ -132,12 +132,12 @@ func _build_ui() -> void:
 	settings_btn.add_theme_stylebox_override("normal", settings_style)
 
 	var settings_hover = settings_style.duplicate()
-	settings_hover.bg_color = Color(0.22, 0.18, 0.3)
-	settings_hover.border_color = Color(0.9, 0.7, 0.35)
+	settings_hover.bg_color = Color(0.26, 0.2, 0.36)
+	settings_hover.border_color = Color(1.0, 0.78, 0.3)
 	settings_btn.add_theme_stylebox_override("hover", settings_hover)
 
 	var settings_pressed = settings_style.duplicate()
-	settings_pressed.bg_color = Color(0.1, 0.08, 0.14)
+	settings_pressed.bg_color = Color(0.12, 0.09, 0.18)
 	settings_btn.add_theme_stylebox_override("pressed", settings_pressed)
 	settings_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	settings_btn.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))
@@ -151,7 +151,7 @@ func _build_ui() -> void:
 	version_lbl.text = "v0.1 — Portfolio Build"
 	version_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	version_lbl.add_theme_font_size_override("font_size", 13)
-	version_lbl.add_theme_color_override("font_color", Color(0.3, 0.3, 0.3))
+	version_lbl.add_theme_color_override("font_color", Color(0.35, 0.3, 0.45))
 	version_lbl.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	version_lbl.offset_top = -30
 	add_child(version_lbl)

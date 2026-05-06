@@ -23,7 +23,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.06, 0.04, 0.08)
+	bg.color = Color(0.07, 0.06, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -121,7 +121,7 @@ func _create_relic_panel(relic: RelicData) -> PanelContainer:
 	var style = StyleBoxFlat.new()
 	style.set_corner_radius_all(10)
 	style.set_border_width_all(3)
-	style.bg_color = Color(0.14, 0.12, 0.18)
+	style.bg_color = Color(0.16, 0.13, 0.22)
 	style.border_color = border_color
 	style.content_margin_left = 16
 	style.content_margin_right = 16

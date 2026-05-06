@@ -65,7 +65,7 @@ func _process(delta: float) -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.06, 0.04, 0.08)
+	bg.color = Color(0.07, 0.06, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -160,7 +160,7 @@ void fragment() {
 func _build_bottom_bar(parent: VBoxContainer) -> void:
 	var panel = PanelContainer.new()
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.12, 0.9)
+	style.bg_color = Color(0.12, 0.1, 0.18, 0.9)
 	style.set_corner_radius_all(6)
 	style.content_margin_left = 20
 	style.content_margin_right = 20
@@ -287,7 +287,7 @@ func _show_relic_popup() -> void:
 			var relic_panel = PanelContainer.new()
 			relic_panel.custom_minimum_size = Vector2(200, 80)
 			var rs = StyleBoxFlat.new()
-			rs.bg_color = Color(0.12, 0.1, 0.14)
+			rs.bg_color = Color(0.14, 0.11, 0.2)
 			rs.set_corner_radius_all(6)
 			rs.set_border_width_all(2)
 			rs.border_color = color
@@ -361,14 +361,14 @@ func _show_deck_popup() -> void:
 		style.content_margin_bottom = 6
 		match card.card_type:
 			CardData.CardType.ATTACK:
-				style.bg_color = Color(0.22, 0.1, 0.1)
-				style.border_color = Color(0.7, 0.25, 0.25)
+				style.bg_color = Color(0.28, 0.1, 0.08)
+				style.border_color = Color(0.8, 0.2, 0.18)
 			CardData.CardType.SKILL:
-				style.bg_color = Color(0.1, 0.12, 0.22)
-				style.border_color = Color(0.25, 0.4, 0.7)
+				style.bg_color = Color(0.08, 0.12, 0.28)
+				style.border_color = Color(0.2, 0.38, 0.8)
 			CardData.CardType.POWER:
-				style.bg_color = Color(0.22, 0.2, 0.1)
-				style.border_color = Color(0.7, 0.6, 0.2)
+				style.bg_color = Color(0.28, 0.24, 0.08)
+				style.border_color = Color(0.8, 0.65, 0.15)
 		# Upgraded card green border tint
 		if card.upgraded:
 			style.border_color = style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
@@ -408,7 +408,7 @@ func _create_popup_panel(title: String) -> PanelContainer:
 	var panel = PanelContainer.new()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.06, 0.06, 0.08, 0.96)
+	style.bg_color = Color(0.08, 0.07, 0.14, 0.96)
 	style.content_margin_left = 40
 	style.content_margin_right = 40
 	style.content_margin_top = 30
@@ -479,7 +479,7 @@ func _create_map_display() -> void:
 				line.add_point(from_pos)
 				line.add_point(to_pos)
 				line.width = 2.0
-				line.default_color = Color(0.3, 0.3, 0.4, 0.6)
+				line.default_color = Color(0.35, 0.3, 0.55, 0.7)
 				map_canvas.add_child(line)
 
 	# Create node buttons

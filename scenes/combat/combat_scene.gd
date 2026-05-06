@@ -169,7 +169,7 @@ func _make_click_event() -> InputEventMouseButton:
 func _build_ui() -> void:
 	# Background
 	var bg = ColorRect.new()
-	bg.color = Color(0.08, 0.06, 0.1)
+	bg.color = Color(0.1, 0.07, 0.18)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -235,7 +235,7 @@ void fragment() {
 	log_text.scroll_following = true
 	log_text.scroll_active = true
 	var log_style = StyleBoxFlat.new()
-	log_style.bg_color = Color(0.06, 0.06, 0.08, 0.95)
+	log_style.bg_color = Color(0.08, 0.07, 0.14, 0.95)
 	log_style.set_corner_radius_all(6)
 	log_style.content_margin_left = 12
 	log_style.content_margin_right = 12
@@ -287,7 +287,7 @@ func _make_pile_button(color: Color) -> Button:
 func _build_player_bar() -> PanelContainer:
 	var panel = PanelContainer.new()
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.12, 0.8)
+	style.bg_color = Color(0.12, 0.1, 0.18, 0.8)
 	style.set_corner_radius_all(6)
 	style.content_margin_left = 20
 	style.content_margin_right = 20
@@ -338,8 +338,8 @@ func _build_bottom_area() -> HBoxContainer:
 	var et_style = StyleBoxFlat.new()
 	et_style.set_corner_radius_all(10)
 	et_style.set_border_width_all(2)
-	et_style.bg_color = Color(0.2, 0.15, 0.1)
-	et_style.border_color = Color(0.7, 0.55, 0.25)
+	et_style.bg_color = Color(0.24, 0.17, 0.08)
+	et_style.border_color = Color(0.8, 0.6, 0.2)
 	et_style.content_margin_left = 12
 	et_style.content_margin_right = 12
 	et_style.content_margin_top = 8
@@ -347,12 +347,12 @@ func _build_bottom_area() -> HBoxContainer:
 	end_turn_btn.add_theme_stylebox_override("normal", et_style)
 
 	var et_hover = et_style.duplicate()
-	et_hover.bg_color = Color(0.3, 0.22, 0.12)
-	et_hover.border_color = Color(0.9, 0.7, 0.3)
+	et_hover.bg_color = Color(0.34, 0.24, 0.08)
+	et_hover.border_color = Color(1.0, 0.78, 0.25)
 	end_turn_btn.add_theme_stylebox_override("hover", et_hover)
 
 	var et_pressed = et_style.duplicate()
-	et_pressed.bg_color = Color(0.12, 0.1, 0.06)
+	et_pressed.bg_color = Color(0.16, 0.12, 0.04)
 	end_turn_btn.add_theme_stylebox_override("pressed", et_pressed)
 
 	var et_disabled = et_style.duplicate()
@@ -383,11 +383,11 @@ func _make_hp_bar(width: int, height: int) -> Control:
 	trail.max_value = 100
 	trail.value = 100
 	var trail_bg = StyleBoxFlat.new()
-	trail_bg.bg_color = Color(0.15, 0.08, 0.08)
+	trail_bg.bg_color = Color(0.2, 0.08, 0.06)
 	trail_bg.set_corner_radius_all(3)
 	trail.add_theme_stylebox_override("background", trail_bg)
 	var trail_fill = StyleBoxFlat.new()
-	trail_fill.bg_color = Color(0.6, 0.15, 0.1, 0.6)
+	trail_fill.bg_color = Color(0.7, 0.15, 0.08, 0.6)
 	trail_fill.set_corner_radius_all(3)
 	trail.add_theme_stylebox_override("fill", trail_fill)
 	container.add_child(trail)
@@ -445,10 +445,10 @@ func _on_pile_clicked(pile_name: String) -> void:
 func _show_pile_popup(title: String, cards: Array) -> void:
 	pile_popup = PanelContainer.new()
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.08, 0.1, 0.95)
+	style.bg_color = Color(0.1, 0.08, 0.16, 0.95)
 	style.set_corner_radius_all(10)
 	style.set_border_width_all(2)
-	style.border_color = Color(0.4, 0.4, 0.5)
+	style.border_color = Color(0.45, 0.38, 0.6)
 	style.content_margin_left = 20
 	style.content_margin_right = 20
 	style.content_margin_top = 16
@@ -527,14 +527,14 @@ func _show_pile_popup(title: String, cards: Array) -> void:
 			cs.content_margin_bottom = 4
 			match card.card_type:
 				CardData.CardType.ATTACK:
-					cs.bg_color = Color(0.22, 0.1, 0.1)
-					cs.border_color = Color(0.7, 0.25, 0.25)
+					cs.bg_color = Color(0.28, 0.1, 0.08)
+					cs.border_color = Color(0.8, 0.2, 0.18)
 				CardData.CardType.SKILL:
-					cs.bg_color = Color(0.1, 0.12, 0.22)
-					cs.border_color = Color(0.25, 0.4, 0.7)
+					cs.bg_color = Color(0.08, 0.12, 0.28)
+					cs.border_color = Color(0.2, 0.38, 0.8)
 				CardData.CardType.POWER:
-					cs.bg_color = Color(0.22, 0.2, 0.1)
-					cs.border_color = Color(0.7, 0.6, 0.2)
+					cs.bg_color = Color(0.28, 0.24, 0.08)
+					cs.border_color = Color(0.8, 0.65, 0.15)
 			# Upgraded card green border tint
 			if card.upgraded:
 				cs.border_color = cs.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
@@ -796,14 +796,14 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			style.bg_color = Color(0.25, 0.12, 0.12)
-			style.border_color = Color(0.8, 0.3, 0.3)
+			style.bg_color = Color(0.3, 0.12, 0.1)
+			style.border_color = Color(0.9, 0.25, 0.2)
 		CardData.CardType.SKILL:
-			style.bg_color = Color(0.12, 0.15, 0.25)
-			style.border_color = Color(0.3, 0.5, 0.8)
+			style.bg_color = Color(0.1, 0.14, 0.3)
+			style.border_color = Color(0.25, 0.45, 0.9)
 		CardData.CardType.POWER:
-			style.bg_color = Color(0.25, 0.22, 0.1)
-			style.border_color = Color(0.8, 0.7, 0.2)
+			style.bg_color = Color(0.28, 0.24, 0.08)
+			style.border_color = Color(0.9, 0.75, 0.15)
 
 	# Upgraded card green border tint
 	if card.upgraded:
@@ -819,9 +819,9 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	cost_container.custom_minimum_size = Vector2(36, 36)
 	var cost_style = StyleBoxFlat.new()
 	cost_style.set_corner_radius_all(18)
-	cost_style.bg_color = Color(0.15, 0.12, 0.08)
+	cost_style.bg_color = Color(0.18, 0.14, 0.06)
 	cost_style.set_border_width_all(2)
-	cost_style.border_color = Color(0.85, 0.75, 0.3)
+	cost_style.border_color = Color(0.95, 0.8, 0.2)
 	cost_style.content_margin_left = 4
 	cost_style.content_margin_right = 4
 	cost_style.content_margin_top = 2
@@ -874,17 +874,17 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	art_style.content_margin_bottom = 4
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			art_style.bg_color = Color(0.35, 0.12, 0.1)
+			art_style.bg_color = Color(0.4, 0.1, 0.08)
 			art_style.set_border_width_all(1)
-			art_style.border_color = Color(0.6, 0.2, 0.15, 0.5)
+			art_style.border_color = Color(0.7, 0.18, 0.1, 0.5)
 		CardData.CardType.SKILL:
-			art_style.bg_color = Color(0.1, 0.16, 0.3)
+			art_style.bg_color = Color(0.08, 0.15, 0.35)
 			art_style.set_border_width_all(1)
-			art_style.border_color = Color(0.2, 0.3, 0.55, 0.5)
+			art_style.border_color = Color(0.15, 0.28, 0.65, 0.5)
 		CardData.CardType.POWER:
-			art_style.bg_color = Color(0.3, 0.26, 0.1)
+			art_style.bg_color = Color(0.35, 0.28, 0.06)
 			art_style.set_border_width_all(1)
-			art_style.border_color = Color(0.55, 0.45, 0.15, 0.5)
+			art_style.border_color = Color(0.65, 0.5, 0.1, 0.5)
 	art_frame.add_theme_stylebox_override("panel", art_style)
 	var icon_file = CARD_ICONS.get(card.card_name, "")
 	if icon_file != "":
@@ -1111,7 +1111,7 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 	panel.custom_minimum_size = Vector2(220, 220)
 
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.18, 0.15, 0.2)
+	style.bg_color = Color(0.2, 0.15, 0.25)
 	style.set_corner_radius_all(8)
 	style.set_border_width_all(2)
 	style.border_color = Color(0.5, 0.4, 0.5)
@@ -1146,7 +1146,7 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 		portrait.custom_minimum_size = Vector2(0, 70)
 		var port_style = StyleBoxFlat.new()
 		port_style.set_corner_radius_all(6)
-		port_style.bg_color = Color(0.2, 0.18, 0.22)
+		port_style.bg_color = Color(0.22, 0.17, 0.28)
 		portrait.add_theme_stylebox_override("panel", port_style)
 		var port_icon = Label.new()
 		port_icon.text = "?"
@@ -1165,7 +1165,7 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 	var hp_panel = PanelContainer.new()
 	hp_panel.name = "HPPanel"
 	var hp_style = StyleBoxFlat.new()
-	hp_style.bg_color = Color(0.1, 0.06, 0.06, 0.8)
+	hp_style.bg_color = Color(0.14, 0.06, 0.06, 0.8)
 	hp_style.set_corner_radius_all(5)
 	hp_style.set_border_width_all(1)
 	hp_style.border_color = Color(0.4, 0.15, 0.15)
@@ -1228,10 +1228,10 @@ func _create_enemy_panel(enemy: EnemyCombatState) -> PanelContainer:
 	var intent_panel = PanelContainer.new()
 	intent_panel.name = "IntentPanel"
 	var intent_style = StyleBoxFlat.new()
-	intent_style.bg_color = Color(0.08, 0.08, 0.12, 0.8)
+	intent_style.bg_color = Color(0.1, 0.08, 0.16, 0.8)
 	intent_style.set_corner_radius_all(5)
 	intent_style.set_border_width_all(1)
-	intent_style.border_color = Color(0.3, 0.3, 0.4)
+	intent_style.border_color = Color(0.35, 0.28, 0.5)
 	intent_style.content_margin_left = 8
 	intent_style.content_margin_right = 8
 	intent_style.content_margin_top = 5
@@ -1743,14 +1743,14 @@ func _show_card_hover(card: CardData, source_panel: PanelContainer) -> void:
 	style.content_margin_bottom = 14
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			style.bg_color = Color(0.2, 0.08, 0.08, 0.97)
-			style.border_color = Color(0.9, 0.35, 0.3)
+			style.bg_color = Color(0.25, 0.08, 0.06, 0.97)
+			style.border_color = Color(1.0, 0.3, 0.2)
 		CardData.CardType.SKILL:
-			style.bg_color = Color(0.08, 0.1, 0.2, 0.97)
-			style.border_color = Color(0.3, 0.55, 0.9)
+			style.bg_color = Color(0.06, 0.1, 0.28, 0.97)
+			style.border_color = Color(0.25, 0.5, 1.0)
 		CardData.CardType.POWER:
-			style.bg_color = Color(0.2, 0.18, 0.06, 0.97)
-			style.border_color = Color(0.9, 0.8, 0.25)
+			style.bg_color = Color(0.25, 0.22, 0.04, 0.97)
+			style.border_color = Color(1.0, 0.85, 0.15)
 
 	# Upgraded card green border tint
 	if card.upgraded:
@@ -1806,11 +1806,11 @@ func _show_card_hover(card: CardData, source_panel: PanelContainer) -> void:
 	art_s.content_margin_bottom = 8
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			art_s.bg_color = Color(0.35, 0.12, 0.1)
+			art_s.bg_color = Color(0.4, 0.1, 0.08)
 		CardData.CardType.SKILL:
-			art_s.bg_color = Color(0.1, 0.16, 0.3)
+			art_s.bg_color = Color(0.08, 0.15, 0.35)
 		CardData.CardType.POWER:
-			art_s.bg_color = Color(0.3, 0.26, 0.1)
+			art_s.bg_color = Color(0.35, 0.28, 0.06)
 	art.add_theme_stylebox_override("panel", art_s)
 	var icon_file2 = CARD_ICONS.get(card.card_name, "")
 	if icon_file2 != "":

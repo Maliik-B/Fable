@@ -16,7 +16,7 @@ func _ready() -> void:
 func _build_ui() -> void:
 	# Background
 	var bg = ColorRect.new()
-	bg.color = Color(0.04, 0.03, 0.06)
+	bg.color = Color(0.08, 0.06, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -45,10 +45,10 @@ func _build_ui() -> void:
 	var panel = PanelContainer.new()
 	panel.custom_minimum_size = Vector2(500, 0)
 	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.08, 0.06, 0.1, 0.9)
+	panel_style.bg_color = Color(0.1, 0.08, 0.16, 0.9)
 	panel_style.set_corner_radius_all(10)
 	panel_style.set_border_width_all(2)
-	panel_style.border_color = Color(0.4, 0.35, 0.25)
+	panel_style.border_color = Color(0.5, 0.4, 0.25)
 	panel_style.content_margin_left = 40
 	panel_style.content_margin_right = 40
 	panel_style.content_margin_top = 30
@@ -88,8 +88,8 @@ func _build_ui() -> void:
 	var btn_style = StyleBoxFlat.new()
 	btn_style.set_corner_radius_all(10)
 	btn_style.set_border_width_all(2)
-	btn_style.bg_color = Color(0.15, 0.12, 0.2)
-	btn_style.border_color = Color(0.7, 0.55, 0.3)
+	btn_style.bg_color = Color(0.18, 0.13, 0.26)
+	btn_style.border_color = Color(0.8, 0.6, 0.25)
 	btn_style.content_margin_left = 16
 	btn_style.content_margin_right = 16
 	btn_style.content_margin_top = 8
@@ -97,12 +97,12 @@ func _build_ui() -> void:
 	back_btn.add_theme_stylebox_override("normal", btn_style)
 
 	var hover_style = btn_style.duplicate()
-	hover_style.bg_color = Color(0.22, 0.18, 0.3)
-	hover_style.border_color = Color(0.9, 0.7, 0.35)
+	hover_style.bg_color = Color(0.26, 0.2, 0.36)
+	hover_style.border_color = Color(1.0, 0.78, 0.3)
 	back_btn.add_theme_stylebox_override("hover", hover_style)
 
 	var pressed_style = btn_style.duplicate()
-	pressed_style.bg_color = Color(0.1, 0.08, 0.14)
+	pressed_style.bg_color = Color(0.12, 0.09, 0.18)
 	back_btn.add_theme_stylebox_override("pressed", pressed_style)
 	back_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	back_btn.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))

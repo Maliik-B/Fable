@@ -51,7 +51,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.06, 0.04, 0.08)
+	bg.color = Color(0.07, 0.06, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -189,14 +189,14 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			style.bg_color = Color(0.25, 0.12, 0.12)
-			style.border_color = Color(0.8, 0.3, 0.3)
+			style.bg_color = Color(0.3, 0.12, 0.1)
+			style.border_color = Color(0.9, 0.25, 0.2)
 		CardData.CardType.SKILL:
-			style.bg_color = Color(0.12, 0.15, 0.25)
-			style.border_color = Color(0.3, 0.5, 0.8)
+			style.bg_color = Color(0.1, 0.14, 0.3)
+			style.border_color = Color(0.25, 0.45, 0.9)
 		CardData.CardType.POWER:
-			style.bg_color = Color(0.25, 0.22, 0.1)
-			style.border_color = Color(0.8, 0.7, 0.2)
+			style.bg_color = Color(0.28, 0.24, 0.08)
+			style.border_color = Color(0.9, 0.75, 0.15)
 
 	# Upgraded card green border tint
 	if card.upgraded:
@@ -213,9 +213,9 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	cost_container.custom_minimum_size = Vector2(44, 44)
 	var cost_style = StyleBoxFlat.new()
 	cost_style.set_corner_radius_all(22)
-	cost_style.bg_color = Color(0.15, 0.12, 0.08)
+	cost_style.bg_color = Color(0.18, 0.14, 0.06)
 	cost_style.set_border_width_all(2)
-	cost_style.border_color = Color(0.85, 0.75, 0.3)
+	cost_style.border_color = Color(0.95, 0.8, 0.2)
 	cost_style.content_margin_left = 6
 	cost_style.content_margin_right = 6
 	cost_style.content_margin_top = 4
@@ -270,17 +270,17 @@ func _create_card_panel(card: CardData) -> PanelContainer:
 	art_style.content_margin_bottom = 6
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			art_style.bg_color = Color(0.35, 0.12, 0.1)
+			art_style.bg_color = Color(0.4, 0.1, 0.08)
 			art_style.set_border_width_all(1)
-			art_style.border_color = Color(0.6, 0.2, 0.15, 0.5)
+			art_style.border_color = Color(0.7, 0.18, 0.1, 0.5)
 		CardData.CardType.SKILL:
-			art_style.bg_color = Color(0.1, 0.16, 0.3)
+			art_style.bg_color = Color(0.08, 0.15, 0.35)
 			art_style.set_border_width_all(1)
-			art_style.border_color = Color(0.2, 0.3, 0.55, 0.5)
+			art_style.border_color = Color(0.15, 0.28, 0.65, 0.5)
 		CardData.CardType.POWER:
-			art_style.bg_color = Color(0.3, 0.26, 0.1)
+			art_style.bg_color = Color(0.35, 0.28, 0.06)
 			art_style.set_border_width_all(1)
-			art_style.border_color = Color(0.55, 0.45, 0.15, 0.5)
+			art_style.border_color = Color(0.65, 0.5, 0.1, 0.5)
 	art_frame.add_theme_stylebox_override("panel", art_style)
 	var icon_file = CARD_ICONS.get(card.card_name, "")
 	if icon_file != "":

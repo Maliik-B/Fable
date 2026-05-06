@@ -23,7 +23,7 @@ func _process(delta: float) -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.04, 0.03, 0.06)
+	bg.color = Color(0.07, 0.06, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -133,7 +133,7 @@ func _build_victory(vbox: VBoxContainer) -> void:
 func _build_stats_summary(vbox: VBoxContainer) -> void:
 	var panel = PanelContainer.new()
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.1, 0.12, 0.8)
+	style.bg_color = Color(0.12, 0.1, 0.18, 0.8)
 	style.set_corner_radius_all(8)
 	style.content_margin_left = 30
 	style.content_margin_right = 30

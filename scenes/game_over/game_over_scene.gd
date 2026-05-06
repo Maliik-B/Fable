@@ -19,7 +19,7 @@ func _process(delta: float) -> void:
 func _build_ui() -> void:
 	# Background
 	var bg = ColorRect.new()
-	bg.color = Color(0.04, 0.02, 0.02)
+	bg.color = Color(0.12, 0.04, 0.04)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -85,7 +85,7 @@ void fragment() {
 	# --- Run Statistics panel ---
 	var panel = PanelContainer.new()
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.06, 0.06, 0.9)
+	style.bg_color = Color(0.12, 0.08, 0.08, 0.9)
 	style.set_corner_radius_all(10)
 	style.border_width_left = 2
 	style.border_width_right = 2
@@ -142,13 +142,13 @@ void fragment() {
 	try_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 	var btn_style = StyleBoxFlat.new()
-	btn_style.bg_color = Color(0.2, 0.1, 0.1)
+	btn_style.bg_color = Color(0.25, 0.1, 0.08)
 	btn_style.set_corner_radius_all(12)
 	btn_style.border_width_left = 2
 	btn_style.border_width_right = 2
 	btn_style.border_width_top = 2
 	btn_style.border_width_bottom = 2
-	btn_style.border_color = Color(0.6, 0.2, 0.2)
+	btn_style.border_color = Color(0.7, 0.2, 0.15)
 	btn_style.content_margin_left = 20
 	btn_style.content_margin_right = 20
 	btn_style.content_margin_top = 10
@@ -156,13 +156,13 @@ void fragment() {
 	try_btn.add_theme_stylebox_override("normal", btn_style)
 
 	var btn_hover = StyleBoxFlat.new()
-	btn_hover.bg_color = Color(0.3, 0.15, 0.12)
+	btn_hover.bg_color = Color(0.35, 0.16, 0.1)
 	btn_hover.set_corner_radius_all(12)
 	btn_hover.border_width_left = 2
 	btn_hover.border_width_right = 2
 	btn_hover.border_width_top = 2
 	btn_hover.border_width_bottom = 2
-	btn_hover.border_color = Color(0.8, 0.3, 0.25)
+	btn_hover.border_color = Color(0.9, 0.3, 0.2)
 	btn_hover.content_margin_left = 20
 	btn_hover.content_margin_right = 20
 	btn_hover.content_margin_top = 10

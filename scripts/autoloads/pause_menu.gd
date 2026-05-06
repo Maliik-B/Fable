@@ -131,10 +131,10 @@ func _build_ui() -> void:
 	_panel.pivot_offset = Vector2(230, 200) # Roughly center for scale animation
 
 	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.08, 0.05, 0.12, 0.95)
+	panel_style.bg_color = Color(0.1, 0.07, 0.18, 0.95)
 	panel_style.set_corner_radius_all(14)
 	panel_style.set_border_width_all(2)
-	panel_style.border_color = Color(0.7, 0.55, 0.3)
+	panel_style.border_color = Color(0.8, 0.6, 0.25)
 	panel_style.content_margin_left = 40
 	panel_style.content_margin_right = 40
 	panel_style.content_margin_top = 30
@@ -259,8 +259,8 @@ func _create_button(text: String, font_size: int = 18, min_size: Vector2 = Vecto
 	var btn_style = StyleBoxFlat.new()
 	btn_style.set_corner_radius_all(10)
 	btn_style.set_border_width_all(2)
-	btn_style.bg_color = Color(0.15, 0.12, 0.2)
-	btn_style.border_color = Color(0.7, 0.55, 0.3)
+	btn_style.bg_color = Color(0.18, 0.13, 0.26)
+	btn_style.border_color = Color(0.8, 0.6, 0.25)
 	btn_style.content_margin_left = 16
 	btn_style.content_margin_right = 16
 	btn_style.content_margin_top = 8
@@ -268,12 +268,12 @@ func _create_button(text: String, font_size: int = 18, min_size: Vector2 = Vecto
 	btn.add_theme_stylebox_override("normal", btn_style)
 
 	var hover_style = btn_style.duplicate()
-	hover_style.bg_color = Color(0.22, 0.18, 0.3)
-	hover_style.border_color = Color(0.9, 0.7, 0.35)
+	hover_style.bg_color = Color(0.26, 0.2, 0.36)
+	hover_style.border_color = Color(1.0, 0.78, 0.3)
 	btn.add_theme_stylebox_override("hover", hover_style)
 
 	var pressed_style = btn_style.duplicate()
-	pressed_style.bg_color = Color(0.1, 0.08, 0.14)
+	pressed_style.bg_color = Color(0.12, 0.09, 0.18)
 	btn.add_theme_stylebox_override("pressed", pressed_style)
 	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 

@@ -23,7 +23,7 @@ func _process(delta: float) -> void:
 func _build_ui() -> void:
 	# Background
 	var bg = ColorRect.new()
-	bg.color = Color(0.04, 0.03, 0.06)
+	bg.color = Color(0.08, 0.06, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -143,8 +143,8 @@ func _build_ui() -> void:
 	var back_style = StyleBoxFlat.new()
 	back_style.set_corner_radius_all(10)
 	back_style.set_border_width_all(2)
-	back_style.bg_color = Color(0.12, 0.1, 0.15)
-	back_style.border_color = Color(0.4, 0.35, 0.3)
+	back_style.bg_color = Color(0.14, 0.11, 0.2)
+	back_style.border_color = Color(0.5, 0.4, 0.3)
 	back_style.content_margin_left = 16
 	back_style.content_margin_right = 16
 	back_style.content_margin_top = 8
@@ -152,12 +152,12 @@ func _build_ui() -> void:
 	back_btn.add_theme_stylebox_override("normal", back_style)
 
 	var back_hover = back_style.duplicate()
-	back_hover.bg_color = Color(0.18, 0.15, 0.22)
-	back_hover.border_color = Color(0.55, 0.48, 0.4)
+	back_hover.bg_color = Color(0.22, 0.17, 0.28)
+	back_hover.border_color = Color(0.65, 0.55, 0.4)
 	back_btn.add_theme_stylebox_override("hover", back_hover)
 
 	var back_pressed = back_style.duplicate()
-	back_pressed.bg_color = Color(0.08, 0.07, 0.1)
+	back_pressed.bg_color = Color(0.1, 0.08, 0.14)
 	back_btn.add_theme_stylebox_override("pressed", back_pressed)
 	back_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	back_btn.add_theme_color_override("font_color", Color(0.7, 0.65, 0.55))
@@ -184,7 +184,7 @@ func _build_character_card(data: Dictionary, _index: int) -> PanelContainer:
 	var style = StyleBoxFlat.new()
 	style.set_corner_radius_all(14)
 	style.set_border_width_all(2)
-	style.bg_color = Color(0.1, 0.08, 0.14)
+	style.bg_color = Color(0.12, 0.09, 0.18)
 	style.border_color = Color(0.55, 0.45, 0.25) if not is_locked else Color(0.3, 0.3, 0.3)
 	style.content_margin_left = 16
 	style.content_margin_right = 16
@@ -286,8 +286,8 @@ func _build_character_card(data: Dictionary, _index: int) -> PanelContainer:
 		var btn_style = StyleBoxFlat.new()
 		btn_style.set_corner_radius_all(10)
 		btn_style.set_border_width_all(2)
-		btn_style.bg_color = Color(0.15, 0.12, 0.22)
-		btn_style.border_color = Color(0.7, 0.55, 0.3)
+		btn_style.bg_color = Color(0.18, 0.13, 0.28)
+		btn_style.border_color = Color(0.8, 0.6, 0.25)
 		btn_style.content_margin_left = 16
 		btn_style.content_margin_right = 16
 		btn_style.content_margin_top = 8
@@ -295,12 +295,12 @@ func _build_character_card(data: Dictionary, _index: int) -> PanelContainer:
 		select_btn.add_theme_stylebox_override("normal", btn_style)
 
 		var hover_style = btn_style.duplicate()
-		hover_style.bg_color = Color(0.22, 0.18, 0.32)
-		hover_style.border_color = Color(0.9, 0.7, 0.35)
+		hover_style.bg_color = Color(0.26, 0.2, 0.38)
+		hover_style.border_color = Color(1.0, 0.78, 0.3)
 		select_btn.add_theme_stylebox_override("hover", hover_style)
 
 		var pressed_style = btn_style.duplicate()
-		pressed_style.bg_color = Color(0.1, 0.08, 0.14)
+		pressed_style.bg_color = Color(0.12, 0.09, 0.18)
 		select_btn.add_theme_stylebox_override("pressed", pressed_style)
 		select_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 		select_btn.add_theme_color_override("font_color", Color(0.9, 0.8, 0.5))

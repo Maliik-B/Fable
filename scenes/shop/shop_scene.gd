@@ -57,7 +57,7 @@ func _generate_shop() -> void:
 
 func _build_ui() -> void:
 	var bg = ColorRect.new()
-	bg.color = Color(0.06, 0.05, 0.08)
+	bg.color = Color(0.07, 0.07, 0.15)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
 
@@ -206,14 +206,14 @@ func _create_shop_card(card: CardData, price: int) -> PanelContainer:
 
 	match card.card_type:
 		CardData.CardType.ATTACK:
-			style.bg_color = Color(0.25, 0.12, 0.12)
-			style.border_color = Color(0.8, 0.3, 0.3)
+			style.bg_color = Color(0.3, 0.12, 0.1)
+			style.border_color = Color(0.9, 0.25, 0.2)
 		CardData.CardType.SKILL:
-			style.bg_color = Color(0.12, 0.15, 0.25)
-			style.border_color = Color(0.3, 0.5, 0.8)
+			style.bg_color = Color(0.1, 0.14, 0.3)
+			style.border_color = Color(0.25, 0.45, 0.9)
 		CardData.CardType.POWER:
-			style.bg_color = Color(0.25, 0.22, 0.1)
-			style.border_color = Color(0.8, 0.7, 0.2)
+			style.bg_color = Color(0.28, 0.24, 0.08)
+			style.border_color = Color(0.9, 0.75, 0.15)
 
 	# Upgraded card green border tint
 	if card.upgraded:
@@ -364,7 +364,7 @@ func _create_shop_relic(relic: RelicData, price: int) -> PanelContainer:
 	var style = StyleBoxFlat.new()
 	style.set_corner_radius_all(10)
 	style.set_border_width_all(3)
-	style.bg_color = Color(0.14, 0.12, 0.18)
+	style.bg_color = Color(0.16, 0.13, 0.22)
 	style.border_color = border_color
 	style.content_margin_left = 12
 	style.content_margin_right = 12
@@ -509,14 +509,14 @@ func _show_deck_for_removal() -> void:
 		btn_style.content_margin_bottom = 6
 		match card.card_type:
 			CardData.CardType.ATTACK:
-				btn_style.bg_color = Color(0.3, 0.15, 0.15)
-				btn_style.border_color = Color(0.6, 0.25, 0.25)
+				btn_style.bg_color = Color(0.35, 0.14, 0.12)
+				btn_style.border_color = Color(0.7, 0.22, 0.2)
 			CardData.CardType.SKILL:
-				btn_style.bg_color = Color(0.15, 0.18, 0.3)
-				btn_style.border_color = Color(0.25, 0.4, 0.6)
+				btn_style.bg_color = Color(0.14, 0.17, 0.35)
+				btn_style.border_color = Color(0.22, 0.38, 0.7)
 			CardData.CardType.POWER:
-				btn_style.bg_color = Color(0.3, 0.27, 0.12)
-				btn_style.border_color = Color(0.6, 0.5, 0.15)
+				btn_style.bg_color = Color(0.35, 0.3, 0.08)
+				btn_style.border_color = Color(0.7, 0.55, 0.1)
 		# Upgraded card green border tint
 		if card.upgraded:
 			btn_style.border_color = btn_style.border_color.lerp(Color(0.3, 0.9, 0.3), 0.5)
