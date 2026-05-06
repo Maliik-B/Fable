@@ -16,6 +16,12 @@ Story choices shape gameplay. A passion system shifts characters between dual pe
 
 *Play cards, apply status effects, manage energy and block — a full turn of Fable's combat system.*
 
+## Map
+
+![Map Scroll](screenshots/map_scroll.gif)
+
+*Procedural branching map — combat, elite, rest, shop, event, mystery, and boss nodes across a 3-act structure.*
+
 ## Screenshots
 
 | | |
