@@ -11,7 +11,6 @@ The core blocker with Unreal Engine was that AI assistants cannot create or edit
 - **Scene files (.tscn) are human-readable text** - can be read, written, and diffed
 - **GDScript (.gd) is plain text** - Python-like, no compilation step needed
 - **Resource files (.tres) are also text-based** - themes, styles, data all editable
-- **MCP server integrations exist** (Godot MCP Pro: 163 tools) allowing Claude Code to interact directly with the Godot editor — creating scenes, writing scripts, wiring signals, reading errors
 
 ### Genre-Proven
 Slay the Spire 2 — the sequel to the game that defined the roguelike deckbuilder genre — uses Godot 4. MegaCrit switched from Unity to Godot mid-development and shipped successfully in early access (March 2026). This proves Godot handles:
@@ -111,10 +110,5 @@ Not bolted on — integrated into combat (enemies target it), rewards (card pool
 ### Scene Modularity
 Each major screen (combat, story, map, etc.) is its own Godot scene. Shared components (passion meter, card display) are reusable scene instances. This follows Godot's "everything is a scene" philosophy.
 
-## MCP Integration for Development
-Consider setting up Godot MCP server for Claude Code integration during development. Options:
-- Godot MCP Pro (163 tools, asset library)
-- GDAI MCP Server
-- Community MCP servers (godot-mcp on GitHub)
-
-This would allow Claude Code to directly create scenes, write scripts, wire signals, and run the project from within the development workflow.
+### Scene Modularity, continued
+Each screen stays independently loadable so it can be developed and tested in isolation before wiring into the run flow.
