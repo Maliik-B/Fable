@@ -8,10 +8,9 @@
 .DS_Store
 Thumbs.db
 desktop.ini
-.mcp/
 
-# Claude
-CLAUDE.md
-.claude/
-.mcp.json
-.playwright-mcp/
+
+# Local-only drafts and generated dev output (not for the public repo)
+art_drafts/
+screenshots/card_manifest.png
+docs/DEMO_POLISH_TODO.md

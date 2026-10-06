@@ -235,7 +235,7 @@ The map is STS-style (branching paths, choose your route) but its layout and con
 - **Narrative scenes**: Scroll-framed illustrated panels (warm, sepia-toned, painterly)
 - **Card art**: TBD — could be pixel, illustrated, or a mix
 - **UI elements**: Ornate frames, scroll/parchment motifs
-- **Source**: Art will be sourced externally (not AI-generated during development)
+- **Source**: Art will be sourced externally (original, hand-made)
 
 ---
 

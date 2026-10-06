@@ -6,8 +6,8 @@ After researching the current landscape (April 2026), Godot 4 is the clear choic
 
 ## Why Godot 4
 
-### The Ashen Decks Problem is Solved
-The core blocker with Unreal Engine was that AI assistants cannot create or edit Binary Property files (BPS) or UMG widget blueprints. Godot solves this:
+### Transparent, version-controllable project files
+The core blocker with Unreal Engine was that editor tooling cannot create or edit Binary Property files (BPS) or UMG widget blueprints. Godot solves this:
 - **Scene files (.tscn) are human-readable text** - can be read, written, and diffed
 - **GDScript (.gd) is plain text** - Python-like, no compilation step needed
 - **Resource files (.tres) are also text-based** - themes, styles, data all editable
@@ -26,7 +26,7 @@ Slay the Spire 2 — the sequel to the game that defined the roguelike deckbuild
 - **2D-first engine** — Unlike Unreal/Unity which are 3D-first, Godot's 2D is a first-class citizen
 - **Free, MIT license** — No revenue share, no licensing fees, no runtime fees
 - **Active ecosystem** — Existing deckbuilder frameworks (Slay the Robot, Card Framework) for reference
-- **AI-friendly architecture** — Text-based everything, CLI-friendly, growing Claude/AI tooling
+- **Text-based, tooling-friendly** — Text-based everything, CLI-friendly, easy to diff and script against
 
 ## Why NOT the Alternatives
 
